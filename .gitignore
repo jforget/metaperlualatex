@@ -1,0 +1,11 @@
+*~
+*.pdf
+*.dvi
+*.aux
+*.log
+*.topl
+*.frpl
+*.lgpl
+*.dfpl
+*.pipe
+
