@@ -1,0 +1,955 @@
+\documentclass[a4paper]{article}
+\usepackage[english,frenchb,german,italian,latin]{babel}
+\usepackage[utf8]{luainputenc}
+\usepackage{luaotfload}
+%\usepackage{graphicx}
+%\usepackage{textcomp}
+%\usepackage[dvips]{hyperref}
+\usepackage{breakurl}
+\usepackage{perltex}
+\usepackage{luamplib}
+
+% marge haute 25.4 - 12 = 13.4 mm
+\topmargin=-12mm
+\headheight=0mm
+\headsep=4mm
+% marge basse 297 - (13.4 + 267 + 4) = 12.6mm
+\textheight=267mm
+
+% marge gauche 25,4mm,
+% marge droite 210 - (25,4 + 173) = 11,6mm
+\oddsidemargin=0mm
+\marginparsep=0mm
+\textwidth=173mm
+\columnsep=8mm
+
+%&Latex
+
+\renewcommand{\rmdefault}[0]{ppl}
+\renewcommand{\sfdefault}[0]{phv}
+\renewcommand{\ttdefault}[0]{pcr}
+
+\newcommand{\datenum}{\number\year-%
+\ifnum\month<10\relax0\fi\number\month-%
+\ifnum\day<10\relax0\fi\number\day}
+
+\newenvironment{texte}{\rmfamily}{}
+
+\newcommand{\fran}[0]{\selectlanguage{french}}
+
+%\newcommand{\er}[0]{$^\mathrm{er}$}
+%\newcommand{\re}[0]{$^\mathrm{re}$}
+%\newcommand{\me}[0]{$^\mathrm{e}$}
+\newcommand{\ee}[0]{$^\mathrm{e}$}
+%\newcommand{\nd}[0]{$^\mathrm{nd}$}
+%\newcommand{\nth}[0]{$^\mathrm{th}$}
+
+\pagestyle{myheadings}
+\markright{\sffamily\upshape\kern 8mm\datenum\hfill {\bfseries\normalsize Essai de Metaperlua\LaTeX}\kern 15mm\hfill Page }
+
+% \frhyphex
+\NoAutoSpaceBeforeFDP
+
+\perlnewcommand{\aujourdhui}[0]{
+use DateTime::Calendar::FrenchRevolutionary;
+my $dr = DateTime::Calendar::FrenchRevolutionary->now;
+join ' ', $dr->iso8601, $dr->strftime(", %A %d %B %EY, %Ej%n");
+}
+
+\perlnewcommand{\levercoucher}[6]{
+use DateTime::Event::Sunrise;
+  my ($annee, $mois, $jour, $delta, $nb, $complet) = @_;
+  my ($long, $lat) = qw/0.06 47.25/;
+  my $lever = DateTime::Event::Sunrise->sunrise(longitude => $long
+                          , latitude => $lat, iteration => 1);
+  my $coucher = DateTime::Event::Sunrise->sunset(longitude => $long
+                           , latitude => $lat, iteration => 1);
+  #"Lever du soleil à " . $lever->next($day)->strftime("%H:%M:%S\n")
+  #. "Coucher du soleil à " . $coucher->next($day)->strftime("%H:%M:%S\n");
+  my $table;
+  if ($complet) {
+    $table = <<'TAB';
+\begin{tabular}{|c|c|c|c|r|r|r|r|}
+\hline
+Jour & lever & midi & coucher & var.matin & var.soir & var.long & var.midi \\
+\hline
+TAB
+  }
+  else {
+    $table = <<'TAB';
+\begin{tabular}{|c|c|c|r|r|}
+\hline
+Jour & lever & coucher & var.matin & var.soir \\
+\hline
+TAB
+  }
+  my $day  = DateTime->new(year => $annee, month => $mois, day => $jour)->add(days => - $delta);
+  my $matin = $lever->next($day);
+  my $soir  = $coucher->next($day);
+  my $s_matin = $matin->hour * 3600 + $matin->minute * 60 + $matin->second;
+  my $s_soir  = $soir ->hour * 3600 + $soir ->minute * 60 + $soir ->second;
+  my $s_midi  = ($s_matin + $s_soir) / 2;
+  for (1..$nb) {
+    my $s_matin_av = $s_matin;
+    my $s_soir_av  = $s_soir;
+    my $s_midi_av  = $s_midi;
+
+    my $day  = $day->add(days => $delta);
+    my $matin = $lever->next($day);
+    my $soir  = $coucher->next($day);
+    $s_matin = $matin->hour * 3600 + $matin->minute * 60 + $matin->second;
+    $s_soir  = $soir ->hour * 3600 + $soir ->minute * 60 + $soir ->second;
+    $s_midi  = ($s_matin + $s_soir) / 2;
+    my $midi = $day->clone->add(seconds => $s_midi);
+
+    if ($complet) {
+      my $variations = sprintf("& %d & %d & %d & %d\\\\\n", $s_matin - $s_matin_av, $s_soir - $s_soir_av, $s_matin_av - $s_matin + $s_soir - $s_soir_av, $s_midi - $s_midi_av);
+      $table .= $matin->strftime("%Y-%m-%d & %H:%M:%S\n") . '&' . $midi->strftime("%H:%M:%S") . '&' .  $soir->strftime("%H:%M:%S") . $variations;
+    }
+    else {
+      my $variations = sprintf("& %d & %d\\\\\n", $s_matin - $s_matin_av, $s_soir - $s_soir_av);
+      $table .= $matin->strftime("%Y-%m-%d & %H:%M:%S\n") . '&' .  $soir->strftime("%H:%M:%S") . $variations;
+    }
+  }
+  $table .= "\\hline\n\\end{tabular}\n";
+  return $table
+}
+
+% Affichage d'un nombre positif au format scientifique avec 3 décimales
+% et calcul de la force d'attraction entre la Terre et un corps céleste
+\directlua{
+function affsci(n)
+  local expo = math.floor(math.log10(n));
+  local mant = n / 10 ^ expo;
+  local facteur = 1000;
+  mant = math.floor(mant * facteur) / facteur;
+  return tex.sprint("$" .. tostring(mant) .. string.char(92) .. "times{}10^{" .. tostring(expo) .. "}$")
+end
+function force(masse, dist)
+  local G = 6.673e-11;
+  local mt = 5.973e+24;
+  return affsci(G * mt * masse / (dist * dist));
+end
+}
+\newcommand{\massesoleil}{1.989e+30}
+\newcommand{\distsoleil}{1.49+12}
+\newcommand{\masselune}{7.374e22}
+\newcommand{\distlune}{3.844e+8}
+\newcommand{\massejupiter}{1.898e+27}
+\newcommand{\distjupiter}{778.3e+9}
+
+\begin{document}
+\begin{texte}
+%\show\degre
+\tolerance=1000
+
+\fran
+
+\section{Exposé du problème}
+
+Ce texte est une démonstration de l'outil \texttt{mpll}, ou 
+\textit{Metaperlualatex}. C'est un document écrit en \LaTeX,
+utilisant des fonctions Perl, des schémas MetaPost et (un peu)
+des fonctions Lua.
+
+Le présent document n'est pas pour autant un document artificiel
+dont l'unique but est de démontrer l'utilisation de \textit{Metaperlualatex}.
+C'est aussi une explication du phénomène suivant : du 12~décembre au 
+2~janvier, le jour commence à gagner sur la nuit le
+soir, tandis que la nuit continue à gagner sur le jour le matin,
+comme on peut le voir dans le tableau suivant :
+
+\vspace{2mm}
+\levercoucher{2011}{12}{5}{7}{9}{0}
+\vspace{2mm}
+
+Cela dit, le texte n'est pas un exposé rigoureux de mécanique céleste,
+une description quantitative précise détaillant le mouvement de la
+Terre autour du soleil. C'est plutôt une mise au courant, une
+présentation qualitative permettant de mieux comprendre les aspects
+plutôt ignorés du mouvement de la Terre.
+
+Pour un traitement plus rigoureux mais encore abordable, voir
+``Histoire de l'Heure en France'', de Jacques Gapaillard, éditions
+Vuibert -- ADAPT.
+
+\section{Midi solaire et variation du lever et du coucher du soleil}
+
+\subsection{Les diverses notions de midis}
+
+Si l'on explique à une personne du XXI\ee{} siècle qu'il existe
+deux notions de ``midi'' : le midi solaire, instant où le soleil
+est au plus haut dans le ciel et où il passe au méridien et 
+le midi moyen (ou plus précisément mais plus long, le
+``midi du temps moyen''), que l'on peut repérer avec une montre ou une horloge,
+si l'on explique que l'écart entre ces deux midis est variable,
+cette personne du XXI\ee{} siècle répondra : «~Bien sûr, 
+le midi moyen retarde d'une heure sur le midi solaire en hiver
+et de deux heures en été.~» Éventuellement, si la personne réfléchit
+un peu plus, elle précisera que l'écart varie en fonction du lieu
+considéré. «~À Strasbourg, le midi solaire retarde d'une heure
+et 31 minutes sur le midi moyen en hiver et de deux heures et
+31 minutes en été, tandis qu'à Brest, le midi solaire retarde
+de 42 minutes sur le midi moyen en hiver et d'une heure et 42 minutes
+en été.~»
+
+Cette personne associe la notion d'heure légale à l'expression ``midi moyen''
+et la notion de midi du temps moyen à l'expression ``midi solaire''.
+Si l'on tente de lui expliquer que, dans le cas de Strasbourg pendant l'hiver, l'écart
+entre le midi solaire et le midi de l'heure légale varie
+de 1 heure et 16 minutes à 1 heure et 46 minutes, alors la personne
+ne comprendra plus.
+
+À l'inverse, si l'on explique à une personne du XVIII\ee{} siècle que
+le midi solaire oscille de part et d'autre du midi moyen et que
+l'écart peut atteindre un quart d'heure, suivant une fonction appelée
+``équation du temps'', il y a plus de chances que cette personne
+asquiece, pour peu que cette personne soit en contact avec des
+horloges et des cadrans solaires. Cette personne ne comprendrait pas
+la notion d'heure légale, qui n'existait pas à cette époque, mais elle
+aurait compris l'irrégularité du passage du soleil au méridien. Il
+était assez bien connu à cette époque que l'intervalle entre deux
+midis solaires successifs n'était pas régulier. Cela dit, comme
+l'expose J. Gapaillard dans son livre, même à cette époque il existait
+des gens pour lesquels le mouvement apparent du soleil autour de la
+Terre était régulier à la seconde près.
+
+Dans la première partie, on admet que le midi solaire varie par rapport
+au midi moyen et le document montre que cela permet d'expliquer le phénomène
+de la variation du lever et du coucher du soleil au mois de décembre.
+Dans la seconde partie, le document expliquera pour quelles
+raisons le midi solaire varie par rapport au midi moyen.
+
+\subsection{Exemple concret}
+
+Voici par exemple, les heures de lever et de coucher du soleil, ainsi
+que le midi solaire, à Saumur en mars 2011. J'ai choisi Saumur car la
+longitude est de 0 degré et 4 minutes, donc le temps UTC correspond
+quasiment au temps moyen local. Le tableau présente l'heure du lever
+du soleil, le midi solaire, l'heure du coucher du soleil et les variations
+en secondes de ces trois instants, ainsi que la variation de la longueur
+du jour.
+
+\vspace{2mm}
+\levercoucher{2011}{3}{16}{1}{15}{1}
+\vspace{2mm}
+
+Prenons le 21 mars. Ce jour-là, la longueur du jour augmente de 205~s,
+soit un peu plus de 3~mn. Également, le midi solaire recule de
+12:07:53 à 12:07:35, soit 17 ou 18 secondes, compte tenu des erreurs
+d'arrondi. L'augmentation de la longueur du jour se répercute pour
+moitié sur la progression du lever du soleil (qui avance puisqu'on est
+au printemps) et sur la progression du coucher du soleil (qui retarde).
+À l'inverse, la variation du midi solaire se répercute à l'identique,
+en durée et en sens, sur le lever du soleil et sur le coucher du
+soleil. Donc, puisque le midi solaire avance de 17~s et puisque
+le jour augmente de 205~s, le lever du soleil progresse de :
+
+\[ -17 - \frac{205}{2} = -120 s \]
+
+c'est-à-dire qu'il avance de 120~secondes,
+passant de 06:03:07 à 06:01:07,
+tandis que le coucher du soleil progresse de :
+
+\[ -17 + \frac{205}{2} = 85 s \]
+
+c'est-à-dire qu'il retarde de 85~secondes, passant de 18:12:39 à
+18:14:04. Il y a donc une différence, mais qui passe inaperçue, car la
+moitié de la variation du jour dépasse largement la variation du midi
+solaire.
+
+\vspace{5mm}
+
+Maintenant, prenons le 24 décembre.
+
+\vspace{2mm}
+\levercoucher{2011}{12}{16}{1}{15}{1}
+\vspace{2mm}
+
+La durée du jour augmente de 6~secondes, tandis que le midi
+solaire retarde de 30~secondes, passant de 11:58:25 à 11:58:55.
+Le lever du soleil progresse donc de :
+
+\[ +30 - \frac{6}{2} = +27 s \]
+
+c'est-à-dire qu'il retarde de 27~secondes, passant
+de 07:42:17 à 07:42:41, tandis que le
+coucher du soleil progresse de :
+
+\[ +30 + \frac{6}{2} = +33 s \]
+
+c'est-à-dire que le coucher du soleil retarde de 33~secondes,
+passant de 16:14:37 à 16:15:10.
+Dans ce cas, la progression du midi solaire est nettement
+prédominante par rapport à la moitié de la variation de la
+durée du jour, donc le lever du soleil et le coucher
+du soleil varient dans la même direction.
+
+\vspace{5mm}
+
+\subsection{Mea Culpa}
+
+Dans le paragraphe précédent, j'ai commis une erreur de raisonnement.
+J'ai assimilé le midi solaire au milieu de la journée, c'est-à-dire l'instant à mi-chemin entre
+le lever et le coucher du soleil. C'est approximatif. Reprenons le
+tableau du mois de mars :
+
+\vspace{2mm}
+\levercoucher{2011}{3}{20}{1}{3}{1}
+\vspace{2mm}
+
+Le 20~mars, le jour dure 12~h 9~mn et 32~s, soit 43~772~s.
+Le 21~mars, il dure 12~h 12~mn et 57~s, soit 43~997~s
+et le 22~mars, il dure 12~h 16~mn et 22~s, soit 44~182~s.
+Cela ne veut pas dire que le 20~ mars à 23~h 59, la durée
+du jour et de 43~772~s et que le 21~mars à 0~h 01, elle est
+brusquement passée à 43~997~s. La durée varie de façon continue
+et puisqu'elle varie de 205~s en 24~h, elle varie de 51~s en 6~h.
+Cela donne :
+
+\vspace{2mm}
+\begin{tabular}{|c|c|c|}
+\hline
+20~mars, midi & 43~772 & 12~h 9~mn 32~s \\
+\hline
+20~mars, 18~h & 43~823 & 12~h 10~mn 23~s \\
+\hline
+21~mars, 6~h & 43~946 & 12~h 12~mn 6~s \\
+\hline
+21~mars, midi & 43~997 & 12~h 12~mn 57~s \\
+\hline
+21~mars, 18~h & 44~048 & 12~h 13~mn 48~s \\
+\hline
+22~mars, 6~h & 44~131 & 12~h 15~mn 31~s \\
+\hline
+22~mars, midi & 44~182 & 12~h 16~mn 22~s \\
+\hline
+\end{tabular}
+\vspace{2mm}
+
+Donc, le 21~mars, le lever du soleil se produit 6~h 6~mn et 3~s
+avant le midi solaire et le coucher du soleil se produit
+6~h 6~mn 54~s après le midi solaire. On en déduit que le
+midi solaire a lieu à 12~h 7~mn et 10~s et non pas
+à 12~h 7~mn 35~s comme dans le tableau ci-dessus.
+
+L'écart entre le midi solaire et le milieu de la journée 
+est proportionnel à la fois à la variation de la durée
+du jour (maximale au moment des équinoxes) et à la durée du 
+jour (maximale au solstice d'été). L'écart maximal se produit
+aux alentours du 22~avril, lorsque la variation de la durée
+du jour est encore voisine de la durée maximale et que la
+durée du jour a eu le temps d'augmenter suffisamment.
+
+\vspace{2mm}
+\levercoucher{2011}{4}{21}{1}{3}{1}
+\vspace{2mm}
+
+À cette date à midi, la durée du jour est de 50~397~secondes (soit
+14~heures à trois secondes près) et la variation de cette durée est de
+193~secondes, à peine moins que les 205~secondes de l'équinoxe de
+printemps. Donc, au lever du soleil, la durée est réduite de
+$\frac{193 \times 7}{24} = 56 $ secondes et au coucher du soleil, elle
+est augmentée d'autant. La durée du matin est $ 25~199 - 28 = 25~171 $
+secondes et la durée du soir est $ 25~199 + 28 = 25~227 $ secondes.
+Le midi solaire a donc lieu à 11~h 58~mn 38~s
+alors que le milieu de la journée a lieu à 11~h 59~mn 6~s.
+
+Cette erreur de calcul invalide-t-elle le raisonnement du
+sous-chapitre précédent ? Non. Comme on peut le voir dans l'exemple
+ci-dessus, cette erreur provoque un écart de 28~secondes au maximum
+entre le midi solaire et le milieu de la journée. Cela reste encore
+largement inférieur aux écarts affichés entre le midi moyen et le midi
+solaire, écarts pouvant dépasser 15~minutes.
+
+D'autre part, l'erreur de calcul sur la position du midi
+solaire est quasiment nulle au moment du solstice d'hiver,
+car la variation de la durée du jour est elle-même nulle.
+Donc, dans le tableau pour la fin décembre et le début 
+de janvier, la valeur indiquée pour le midi solaire
+est quasiment exacte.
+
+
+\section{Variation du midi solaire}
+
+Le problème est donc maintenant de comprendre pourquoi
+le midi solaire varie d'un jour à l'autre, parfois
+de 30~secondes.
+
+\subsection{Situation de départ}
+
+Pour les mouvements de la Terre sur elle-même et autour
+du soleil, adoptons les simplifications suivantes :
+
+\begin{enumerate}
+
+\item La durée de l'année est de 360~jours exactement et
+non pas 365,25 et des poussières.
+
+\item L'orbite de la Terre autour du soleil est un cercle parfait.
+
+\item Le plan de l'orbite terrestre coïncide avec le plan de l'équateur.
+En d'autres termes, l'axe de la rotation de la Terre sur elle-même est
+parallèle à l'axe du mouvement orbital de la Terre autour du soleil.
+
+\item On ne tient pas compte des mouvements à très longue échelle, comme
+la variation de l'inclinaison du plan de l'équateur avec le plan de l'orbite
+terrestre ou la précession des équinoxes.
+
+\item On ne tient pas compte de l'influence des autres corps célestes :
+la Lune, Jupiter etc. Avec sa masse \directlua{affsci(\massesoleil)}~kg,
+le soleil exerce sur la Terre une force de \directlua{force(\massesoleil,\distsoleil)}~N
+tandis que l'attraction de la Lune n'est que de \directlua{force(\masselune,\distlune)}~N
+et celle de Jupiter de \directlua{force(\massejupiter,\distjupiter)}~N.
+Donc on peut négliger l'influence des autres corps célestes et ne prendre
+en considération que l'attraction du soleil.
+
+\end{enumerate}
+
+La première et les deux dernières hypothèses servent à simplifier les calculs
+et resteront en vigueur pour toute la durée de la discussion. La deuxième
+et la troisième simplifications seront supprimées en temps utile pour 
+montrer les causes de la variabilité du midi solaire par rapport au 
+midi moyen.
+
+Avec les cinq simplifications en vigueur, la Terre tourne autour
+du soleil en 360 jours à vitesse constante, donc elle parcourt un
+arc d'un degré par jour. En adoptant temporairement un repère géocentrique
+pointant vers les étoiles ``fixes'', cela crée donc un déplacement relatif
+du soleil par rapport à ces étoiles ``fixes''. Pour compenser cet arc
+d'un degré et pour que le soleil se retrouve au méridien, 
+la rotation de la Terre autour de l'axe des pôles est
+de 361~degrés en 24~heures. Donc, à J+90, elle a effectué 90~tours
+et $\frac{1}{4}$, à J+180 elle a effectué 180~tours plus $\frac{1}{2}$
+et à J+270 elle a effectué 270~tours plus $\frac{3}{4}$. Voir le
+schéma ci-dessous, qui revient à un repère héliocentrique.
+
+\begin{mplibcode}
+beginfig(1);
+ua = 100;
+z0 = (ua,0);
+z90 = (0,ua);
+z180 = (-ua,0);
+z270 = (0,-ua);
+draw z0{up} .. z90 .. z180 .. z270 .. z0;
+
+rayon = 5;
+tiret = 2;
+for i = 0 step 90 until 270 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+  % repère pour le Soleil au méridien
+  draw (x[i], y[i]) + (rayon, 0) rotated (i + 180) --  (x[i], y[i]) + (rayon + tiret, 0) rotated (i + 180);
+endfor;
+
+% soleil
+draw (rayon, 0) .. (0, rayon) .. (-rayon, 0) .. (0, - rayon) .. (rayon, 0);
+
+ecart = rayon + 5;
+drawarrow ( x90 - ecart,  y90) {down} .. {right} ( x90,  y90 - ecart);
+drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+drawarrow (x270 - ecart, y270) .. (x270, y270 - ecart) .. (x270 + ecart, y270) .. (x270, y270 + ecart);
+
+label.rt ("J+0",    (x0 + rayon,           y0));
+label.top("J+90",   (x90,                  y90 + rayon));
+label.lft("J+180",  (x180 - rayon - ecart, y180));
+label.bot("J+270",  (x270,                 y270 - rayon - ecart));
+label.bot("Soleil", (0,                    0 - rayon));
+
+endfig;
+\end{mplibcode}
+
+Donc, lorsque la Terre effectue un mouvement circulaire et que le plan
+de l'équateur coïncide avec le plan de l'orbite, le midi solaire coïncide
+avec le midi moyen.
+
+\subsection{Lois de Kepler}
+
+La première loi de Kepler indique que l'orbite de la Terre
+est une ellipse dont un foyer correspond au centre d'inertie
+du système solaire, c'est-à-dire en pratique, au soleil.
+
+La deuxième loi de Kepler indique que la vitesse de la Terre
+sur son orbite varie de manière que la vitesse surfacique 
+du vecteur soleil--Terre soit constante. Ou avec un peu 
+plus de style, ``le rayon-vecteur balaie des surfaces égales
+dans des temps égaux''.
+
+Et la troisième loi de Kepler n'apporte rien à la présente
+discussion.
+
+Voyons ce que cela donne, avec une ellipse de forte 
+excentricité (0,5) :
+
+\begin{mplibcode}
+beginfig(1);
+ua = 100;
+ub = 50 * sqrt(3);
+z0 = (ua,0);
+z61 = (0,ub);
+z90 = (ua * cosd(116), ub * sind(116));
+z180 = (-ua,0);
+z270 = (x90, - y90);
+z299 = (0,-ub);
+draw z0{up} .. z61 .. z180 .. z299 .. z0;
+
+rayon = 5;
+tiret = 2;
+for i = 0, 61, 90, 180, 270, 299 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+endfor;
+
+% soleil
+xs = ua / 2;
+ys = 0;
+draw (xs + rayon, ys) .. (xs, ys + rayon) .. (xs - rayon, ys) .. (xs, ys - rayon) .. cycle;
+
+label.rt  ("J+0",    (x0 + rayon,   y0));
+label.urt ("J+61",   (x61,          y61 + rayon));
+label.ulft("J+90",   (x90,          y90 + rayon));
+label.lft ("J+180",  (x180 - rayon, y180));
+label.llft("J+270",  (x270,         y270 - rayon));
+label.lrt ("J+299",  (x299,         y299 - rayon));
+label.lrt ("Soleil", (xs,           ys - rayon));
+
+for i = 0 step 90 until 270 :
+  draw (xs, ys) -- (x[i], y[i]);
+endfor
+
+endfig;
+\end{mplibcode}
+
+Comme le soleil se place à l'un des foyers de l'ellipse, à droite sur le
+schéma, il faut déplacer les points J+90 et J+270 vers la gauche pour
+que les surfaces (soleil, J+0, J+90), (soleil, J+90, J+180), (soleil, J+180,
+J+270) et (soleil, J+270, J+0) soient égales en superficie. Et c'est donc
+à J+61 et non pas J+90 que la Terre atteint l'extrémité du petit axe de l'orbite
+et à J+299 au lieu de J+270 qu'elle atteint l'autre extrémité du petit axe.
+
+\begin{mplibcode}
+beginfig(1);
+ua = 100;
+ub = 50 * sqrt(3);
+z0 = (ua,0);
+z61 = (0,ub);
+z90 = (ua * cosd(116), ub * sind(116));
+z180 = (-ua,0);
+z270 = (x90, - y90);
+z299 = (0,-ub);
+draw z0{up} .. z61 .. z180 .. z299 .. z0;
+
+rayon = 5;
+tiret = 2;
+for i = 0, 61, 90, 180, 270, 299 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+  % repère pour le Soleil au méridien
+  draw (x[i], y[i]) + (rayon, 0) rotated (i + 180) --  (x[i], y[i]) + (rayon + tiret, 0) rotated (i + 180);
+endfor;
+
+% soleil
+xs = ua / 2;
+ys = 0;
+draw (xs + rayon, ys) .. (xs, ys + rayon) .. (xs - rayon, ys) .. (xs, ys - rayon) .. cycle;
+
+ecart = rayon + 5;
+drawarrow ( x61 - ecart,  y61) {down} ..  ( (x61, y61) + (ecart, 0) rotated 241);
+drawarrow ( x90 - ecart,  y90) {down} .. {right} ( x90,  y90 - ecart);
+%drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+drawarrow (x270 - ecart, y270) .. (x270, y270 - ecart) .. (x270 + ecart, y270) .. (x270, y270 + ecart);
+%drawarrow (x299 - ecart, y299) .. (x299, y299 - ecart) .. (x299 + ecart, y299) .. (x299, y299 + ecart) .. ( (x299, y299) + (ecart, 0) rotated 109);
+
+label.rt  ("J+0",    (x0 + rayon,           y0));
+label.urt ("J+61",   (x61,                  y61 + rayon));
+label.ulft("J+90",   (x90,                  y90 + rayon));
+label.lft ("J+180",  (x180 - rayon - ecart, y180));
+label.llft("J+270",  (x270,                 y270 - rayon - ecart));
+label.lrt ("J+299",  (x299,                 y299 - rayon - ecart));
+label.bot ("Soleil", (xs,                   ys - rayon));
+
+endfig;
+\end{mplibcode}
+
+Le jour J+61 à midi moyen, la Terre a effectué 61~tours plus 61~degrés,
+mais elle ne pointe pas vers le soleil. Il reste encore à effectuer
+une rotation de 59~degrés pour pointer vers le soleil et arriver au midi
+solaire. De même, le jour J+90 à midi moyen, la Terre a effectué 90~tours
+plus 90~degrés et il reste à effectuer une rotation de 46~degrés pour
+arriver au midi solaire. 
+
+À l'inverse, au jour J+270, le midi solaire survient avant le midi moyen.
+Le midi solaire se produit après 270~tours plus 224~degrés et le midi
+moyen après 270~tours et 270~degrés, soit 46~degrés après le midi solaire.
+
+\begin{mplibcode}
+beginfig(1);
+
+rayon = 20;
+rayonf = 25;
+pair midimoyen, midisolaire;
+
+z61 = (0, 0);
+draw (z61 + (rayon, 0)) .. (z61 + (0, rayon)) .. (z61 + (-rayon, 0)) .. (z61 + (0, -rayon)) .. cycle;
+label.top("J+61", z61 + (0, rayon));
+
+midimoyen   := z61 + (rayonf, 0) rotated 241;
+midisolaire := z61 + (rayonf, 0) rotated 300;
+draw (z61 + (rayon, 0) rotated 241) -- midimoyen;
+draw (z61 + (rayon, 0) rotated 300) -- midisolaire;
+label.llft("Midi moyen",   midimoyen);
+label.lrt ("Midi solaire", midisolaire);
+drawarrow (z61 - (rayonf, 0)) {down} .. midimoyen;
+drawarrow midimoyen { dir 331 } .. { dir 30} midisolaire;
+
+z90 = (100, 0);
+draw (z90 + (rayon, 0)) .. (z90 + (0, rayon)) .. (z90 + (-rayon, 0)) .. (z90 + (0, -rayon)) .. cycle;
+label.top("J+90", z90 + (0, rayon));
+midimoyen   := z90 + (rayonf, 0) rotated 270;
+midisolaire := z90 + (rayonf, 0) rotated 314;
+draw (z90 + (rayon, 0) rotated 314) -- midisolaire;
+draw (z90 + (rayon, 0) rotated 270) -- midimoyen;
+label.bot ("Midi moyen",   midimoyen);
+label.lrt ("Midi solaire", midisolaire);
+drawarrow (z90 - (rayonf, 0)) {down} .. midimoyen;
+drawarrow midimoyen { dir 0 } .. { dir 44 }  midisolaire;
+
+z270 = (200, 0);
+draw (z270 + (rayon, 0)) .. (z270 + (0, rayon)) .. (z270 + (-rayon, 0)) .. (z270 + (0, -rayon)) .. cycle;
+label.top("J+270", z270 + (0, rayonf + 10));
+midisolaire := z270 + (rayonf, 0) rotated 44;
+midimoyen   := z270 + (rayonf, 0) rotated 90;
+draw (z270 + (rayon, 0) rotated 44) -- midisolaire;
+draw (z270 + (rayon, 0) rotated 90) -- midimoyen;
+label.top("Midi moyen",   midimoyen);
+label.rt ("Midi solaire", midisolaire);
+%drawarrow (z270 - (rayonf, 0)) {down} .. midisolaire;
+drawarrow (z270 - (rayonf, 0)) {down} .. (z270 - (0, rayonf)) .. (z270 + (rayonf, 0)) .. midisolaire;
+drawarrow midisolaire { dir 134 } .. { dir 180}  midimoyen;
+
+z299 = (350, 0);
+draw (z299 + (rayon, 0)) .. (z299 + (0, rayon)) .. (z299 + (-rayon, 0)) .. (z299 + (0, -rayon)) .. cycle;
+label.top("J+299", z299 + (0, rayonf + 10));
+
+midisolaire := z299 + (rayonf, 0) rotated 63;
+midimoyen   := z299 + (rayonf, 0) rotated 119;
+draw (z299 + (rayon, 0) rotated 63) -- midisolaire;
+draw (z299 + (rayon, 0) rotated 119) -- midimoyen;
+label.urt ("Midi solaire", midisolaire);
+label.ulft("Midi moyen",   midimoyen);
+%drawarrow (z299 - (rayonf, 0)) {down} .. (z299 - (0, rayonf)) .. (z99 + (0, rayonf)) .. midisolaire;
+drawarrow (z299 - (rayonf, 0)) {down} .. (z299 - (0, rayonf)) .. midisolaire;
+drawarrow midisolaire { dir 153 } .. { dir 209 } midimoyen;
+
+endfig;
+\end{mplibcode}
+
+Dans ces exemples, les écarts de 46 ou 59~degrés correspondent
+à un écart de temps de 3 ou 4~heures. C'est largement supérieur
+aux écarts observés par la Terre réelle. Mais également, l'orbite
+de la Terre a une excentricité de 0,02, alors que la discussion
+ci-dessus repose sur une excentricité de 0,5.
+
+\subsection{Influence de l'inclinaison de l'orbite}
+
+On remet en vigueur la deuxième simplification et on enlève la
+troisième. La discussion est alors un peu plus difficile à suivre,
+car cela impose un raisonnement en dimension~3, peu commode
+à représenter sur une feuille de papier en dimension~2.
+
+On part de la situation où les quatre simplifications sont
+en vigueur, puis on fait pivoter le plan de l'orbite terrestre
+\textit{sans faire pivoter le plan de l'équateur ou l'axe des pôles},
+puis on projette orthogonalement la nouvelle orbite sur le plan de l'ancienne
+orbite, \textit{toujours sans faire pivoter le plan de l'équateur}.
+
+\begin{mplibcode}
+beginfig(1);
+
+ua = 100;
+rayon = 5;
+tiret = 2;
+
+% Terre vue de profil
+def terreprofil(expr z) =
+fill z + (rayon, 0) .. z + (0, rayon) .. z - (rayon, 0) .. z - (0, rayon) .. cycle;
+draw z - (rayon + tiret, 0) -- z + (rayon + tiret, 0);
+enddef;
+
+% transformation vue de profil
+xprof = -200;
+draw (xprof, ua) -- (xprof, -ua);
+draw (xprof, 0) + (0, ua) rotated 60 -- (xprof, 0) + (0, -ua) rotated 60;
+terreprofil( (xprof, ua ) );
+terreprofil( (xprof, 0 ) + (0, ua) rotated 60 );
+terreprofil( (xprof, ua / 2 ) );
+terreprofil( (xprof, - ua ) );
+terreprofil( (xprof, 0 ) - (0, ua) rotated 60 );
+terreprofil( (xprof, - ua / 2 ) );
+
+drawarrow  (xprof - rayon - 3 * tiret, ua) {left} .. {dir 240} ((xprof, 0 ) + (0 + rayon + 3 * tiret, ua + tiret) rotated 60);
+drawarrow  (xprof + rayon + 3 * tiret, 0 ) + (0, ua) rotated 60 --  (xprof - rayon - 3 * tiret, ua / 2);
+drawarrow  (xprof + rayon + 3 * tiret, - ua) {right} .. {dir 60} ((xprof, 0 ) - (0 + rayon + 3 * tiret, ua + tiret) rotated 60);
+drawarrow  (xprof - rayon - 3 * tiret, 0 ) - (0, ua) rotated 60 --  (xprof + rayon + 3 * tiret, - ua / 2);
+
+% transformation vue de face
+z0 = (ua,0);
+z90 = (0,ua);
+z180 = (-ua,0);
+z270 = (0,-ua);
+
+pair zf[];
+path orbite;
+zf90 = (0, ua / 2);
+zf270 = (0, - ua / 2);
+orbite = z0{up} .. z90 .. z180 .. z270 .. z0;
+draw orbite;
+draw orbite yscaled 0.5;
+
+for i = 0 step 90 until 270 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+  % repère pour le Soleil au méridien
+  draw (x[i], y[i]) + (rayon, 0) rotated (i + 180) --  (x[i], y[i]) + (rayon + tiret, 0) rotated (i + 180);
+endfor;
+
+% soleil
+draw (rayon, 0) .. (0, rayon) .. (-rayon, 0) .. (0, - rayon) .. (rayon, 0);
+
+% Nouveau J+90
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf90;
+draw ((0, - rayon) -- (0, - rayon - tiret)) shifted (x90, y90 / 2);
+
+drawarrow (z90 - (0, 2 * rayon)) -- (zf90 + (0, 2 * rayon));
+
+% Nouveau J+270
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf270;
+draw ((0, + rayon) -- (0, + rayon + tiret)) shifted zf270;
+
+drawarrow (z270 + (0, 2 * rayon)) -- (zf270 - (0, 2 * rayon));
+
+ecart := rayon + 5;
+drawarrow ( x90 - ecart,  y90) {down} .. {right} ( x90,  y90 - ecart);
+drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+drawarrow (x270 - ecart, y270) .. (x270, y270 - ecart) .. (x270 + ecart, y270) .. (x270, y270 + ecart);
+
+label.rt ("J+0",    (x0 + rayon,           y0));
+label.top("J+90",   (x90,                  y90 + rayon));
+label.lft("J+180",  (x180 - rayon - ecart, y180));
+label.bot("J+270",  (x270,                 y270 - rayon - ecart));
+label.bot("Soleil", (0,                    0 - rayon));
+
+endfig;
+\end{mplibcode}
+
+Cela se traduit au final par un rétrécissement du cercle sur un
+axe, ce qui donne une ellipse. Tout ceci, sans changer la vitesse
+de rotation de la Terre sur elle-même, puisque l'axe des pôles
+est resté constamment parallèle à lui-même.
+
+Compte tenu de l'inclinaison exagérée de 60~degrés, le cercle
+est rétréci de moitié. Pour l'inclinaison réelle de 23~degrés,
+le rétrécissement du cercle aurait été de  8~\%.
+
+Prenons maintenant en compte les jours intermédiaires, J+45,
+J+135, J+225 et J+315.
+
+\begin{mplibcode}
+beginfig(1);
+
+ua = 100;
+rayon = 5;
+tiret = 2;
+% transformation vue de face
+z0   = ( ua,  0);
+z90  = (  0, ua);
+z180 = (-ua,  0);
+z270 = (  0,-ua);
+
+path orbite;
+orbite = z0{up} .. z90 .. z180 .. z270 .. z0;
+
+z45  = point 0.5 of orbite;
+z135 = point 1.5 of orbite;
+z225 = point 2.5 of orbite;
+z315 = point 3.5 of orbite;
+
+pair zf[];
+zf90 = (0, ua / 2);
+xf90 = 0;
+yf90 = ua / 2;
+zf270 = (0, - ua / 2);
+xf270 = 0;
+yf270 = - ua / 2;
+zf45  = z45  yscaled 0.5;
+zf135 = z135 yscaled 0.5;
+zf225 = z225 yscaled 0.5;
+zf315 = z315 yscaled 0.5;
+
+draw orbite;
+draw orbite yscaled 0.5;
+
+for i = 0 step 45 until 315 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+  % repère pour le Soleil au méridien
+  draw (x[i], y[i]) + (rayon, 0) rotated (i + 180) --  (x[i], y[i]) + (rayon + tiret, 0) rotated (i + 180);
+endfor;
+
+% soleil
+draw (rayon, 0) .. (0, rayon) .. (-rayon, 0) .. (0, - rayon) .. (rayon, 0);
+
+% Nouveau J+45
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf45;
+draw ((- rayon, 0) -- (- rayon - tiret, 0)) rotated 45 shifted (x45, y45 / 2);
+
+drawarrow (z45 - (0, 2 * rayon)) -- (zf45 + (0, 2 * rayon));
+
+% Nouveau J+90
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf90;
+draw ((0, - rayon) -- (0, - rayon - tiret)) shifted (x90, y90 / 2);
+
+drawarrow (z90 - (0, 2 * rayon)) -- (zf90 + (0, 2 * rayon));
+
+% Nouveau J+135
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf135;
+draw ((- rayon, 0) -- (- rayon - tiret, 0)) rotated 135 shifted (x135, y135 / 2);
+
+drawarrow (z135 - (0, 2 * rayon)) -- (zf135 + (0, 2 * rayon));
+
+% Nouveau J+225
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf225;
+draw ((- rayon, 0) -- (- rayon - tiret, 0)) rotated 225 shifted (x225, y225 / 2);
+
+drawarrow (z225 + (0, 2 * rayon)) -- (zf225 - (0, 2 * rayon));
+
+% Nouveau J+270
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf270;
+draw ((0, + rayon) -- (0, + rayon + tiret)) shifted zf270;
+
+drawarrow (z270 + (0, 2 * rayon)) -- (zf270 - (0, 2 * rayon));
+
+% Nouveau J+315
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf315;
+draw ((- rayon, 0) -- (- rayon - tiret, 0)) rotated 315 shifted (x315, y315 / 2);
+
+drawarrow (z315 + (0, 2 * rayon)) -- (zf315 - (0, 2 * rayon));
+
+ecart := rayon + 5;
+%drawarrow ( x90  - ecart,  y90)  {down} .. {right} ( x90,   y90  - ecart);
+%drawarrow ( xf90 - ecart,  yf90) {down} .. {right} ( xf90,  yf90 - ecart);
+%drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+%drawarrow (x270  - ecart, y270 ) .. (x270 , y270  - ecart) .. (x270  + ecart, y270 ) .. (x270 , y270  + ecart);
+%drawarrow (xf270 - ecart, yf270) .. (xf270, yf270 - ecart) .. (xf270 + ecart, yf270) .. (xf270, yf270 + ecart);
+
+label.rt ("J+0",    (x0 + rayon,           y0));
+label.rt ("J+45",   (x45 + rayon,          y45));
+label.top("J+90",   (x90,                  y90 + rayon));
+label.lft("J+135",  (x135 - rayon - ecart, y135));
+label.lft("J+180",  (x180 - rayon - ecart, y180));
+label.lft("J+225",  (x225 - rayon - ecart, y225));
+label.bot("J+270",  (x270,                 y270 - rayon - ecart));
+label.rt ("J+315",  (x315 + rayon,         y315));
+label.bot("Soleil", (0,                    0 - rayon));
+
+endfig;
+\end{mplibcode}
+
+Avec cette transformation, on constate que le midi moyen et le midi
+solaire coïncident pour J+90, J+180 et J+270. Mais ce n'est pas
+le cas entre ces différents jours, notamment pour J+45,
+J+135, J+225 et J+315.
+
+
+\begin{mplibcode}
+beginfig(1);
+
+rayon = 20;
+rayonf = 25;
+pair midimoyen, midisolaire;
+
+z45 = (0, 0);
+draw (z45 + (rayon, 0)) .. (z45 + (0, rayon)) .. (z45 + (-rayon, 0)) .. (z45 + (0, -rayon)) .. cycle;
+label.top("J+45", z45 + (0, rayon));
+midimoyen   := z45 + (rayonf, 0) rotated 225;
+midisolaire := z45 + (rayonf, 0) rotated 207;
+draw (z45 + (rayon, 0) rotated 225) -- midimoyen;
+draw (z45 + (rayon, 0) rotated 207) -- midisolaire;
+label.bot ("Midi moyen",   midimoyen);
+label.lft ("Midi solaire", midisolaire);
+drawarrow (z45 - (rayonf, 0)) {down} .. midisolaire;
+drawarrow midisolaire { dir 297 } .. { dir 315} midimoyen;
+
+z135 = (70, 0);
+draw (z135 + (rayon, 0)) .. (z135 + (0, rayon)) .. (z135 + (-rayon, 0)) .. (z135 + (0, -rayon)) .. cycle;
+label.top("J+135", z135 + (0, rayon));
+midimoyen   := z135 + (rayonf, 0) rotated 315;
+midisolaire := z135 + (rayonf, 0) rotated 333;
+draw (z135 + (rayon, 0) rotated 315) -- midimoyen;
+draw (z135 + (rayon, 0) rotated 333) -- midisolaire;
+label.lrt("Midi moyen",   midimoyen);
+label.rt ("Midi solaire", midisolaire);
+drawarrow (z135 - (rayonf, 0)) {down} .. midimoyen;
+drawarrow midimoyen { dir 45 } .. { dir 63}  midisolaire;
+
+z225 = (180, 0);
+draw (z225 + (rayon, 0)) .. (z225 + (0, rayon)) .. (z225 + (-rayon, 0)) .. (z225 + (0, -rayon)) .. cycle;
+label.top("J+225", z225 + (0, rayon));
+midisolaire := z225 + (rayonf, 0) rotated  27;
+midimoyen   := z225 + (rayonf, 0) rotated  45;
+draw (z225 + (rayon, 0) rotated  27) -- midisolaire;
+draw (z225 + (rayon, 0) rotated  45) -- midimoyen;
+label.rt  ("Midi solaire", midisolaire);
+label.urt ("Midi moyen",   midimoyen);
+drawarrow (z225 - (rayonf, 0)) {down} .. midisolaire;
+drawarrow midisolaire { dir 217 } .. { dir 135} midimoyen;
+
+z315 = (350, 0);
+draw (z315 + (rayon, 0)) .. (z315 + (0, rayon)) .. (z315 + (-rayon, 0)) .. (z315 + (0, -rayon)) .. cycle;
+label.top("J+315", z315 + (0, rayonf));
+midimoyen   := z315 + (rayonf, 0) rotated 135;
+midisolaire := z315 + (rayonf, 0) rotated 153;
+draw (z315 + (rayon, 0) rotated 135) -- midimoyen;
+draw (z315 + (rayon, 0) rotated 153) -- midisolaire;
+label.ulft("Midi moyen",   midimoyen);
+label.lft ("Midi solaire", midisolaire);
+drawarrow (z315 - (rayonf, 0)) {down} .. (z315 - (0, rayonf)) .. (z315 + (rayonf, 0)) .. midimoyen;
+drawarrow midimoyen { dir 225 } .. { dir 243}  midisolaire;
+
+endfig;
+\end{mplibcode}
+
+On voit que le midi solaire précède le midi moyen de J+0 à J+90 puis de nouveau
+de J+180 à J+270, tandis que le midi moyen précède le midi solaire de
+J+90 à J+180 et de nouveau de J+270 à J+360. Au lieu d'une variation périodique
+de période égale à une année, on a maintenant une variation périodique
+de période égale à la moitié d'une année.
+
+\subsection{Au final}
+
+Avec les valeurs prises, excentricité à 0,5 et inclinaison à
+60~degrés, la prise en compte simultanée des deux phénomènes est
+compliquée. En revanche, avec les valeurs réelles de la Terre,
+excentricité à moins de 0,02 et inclinaison à 23~degrés, on peut
+assimiler les courbes de variation à des sinusoïdales de faible
+amplitude et les additionner. Attention, les jours J+0 pour les deux
+phénomènes ne coïncident pas. Pour l'excentricité de l'orbite, J+0
+correspond au passage de la Terre au périhélie, soit le
+3~janvier. Pour l'inclinaison de l'orbite, J+0 correspond à l'un des
+équinoxes, le 21~mars ou le 21~septembre environ.
+
+La courbe de variation est donnée dans ``Histoire de l'Heure en France'', 
+de Jacques Gapaillard, éditions Vuibert -- ADAPT. L'équation du temps (écart
+entre le midi solaire et le midi moyen) varie entre  un retard de 14~mn
+15~s du midi solaire par rapport au midi moyen et une avance de 16~mn
+et 30~s du midi solaire par rapport au midi moyen.
+
+\section{Annexe}
+
+Ce texte est diffusé sous la licence \textit{Creative Commons},
+Paternité, pas d'utilisation commerciale 3.0 France.
+Les programmes associés sont diffusés sous license double GPL + \textit{Artistic}.
+Copyright (c) 2012, Jean Forget.
+
+\end{texte}
+\end{document}
