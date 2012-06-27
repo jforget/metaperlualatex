@@ -47,14 +47,7 @@
 \pagestyle{myheadings}
 \markright{\sffamily\upshape\kern 8mm\datenum\hfill {\bfseries\normalsize Essai de Metaperlua\LaTeX}\kern 15mm\hfill Page }
 
-% \frhyphex
 \NoAutoSpaceBeforeFDP
-
-\perlnewcommand{\aujourdhui}[0]{
-use DateTime::Calendar::FrenchRevolutionary;
-my $dr = DateTime::Calendar::FrenchRevolutionary->now;
-join ' ', $dr->iso8601, $dr->strftime(", %A %d %B %EY, %Ej%n");
-}
 
 \perlnewcommand{\levercoucher}[6]{
 use DateTime::Event::Sunrise;
@@ -140,7 +133,6 @@ end
 
 \begin{document}
 \begin{texte}
-%\show\degre
 \tolerance=1000
 
 \fran
