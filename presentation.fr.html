@@ -49,6 +49,22 @@ par c<span class='mauvais'>\oe{}</span>ur la valeur de $\pi$,
 
 \end{document}
 </pre>
+<p>
+Pour les «&nbsp;&oelig;&nbsp;» dans l'exemple ci-dessus et pour les
+«&nbsp;ç&nbsp;», il y a deux façons de coder. La première
+façon, qui me déplaît,
+est <tt>c\oe&nbsp;ur</tt> et <tt>re\c&nbsp;cu</tt>, le blanc servant
+à marquer la fin de la commande <tt>\oe</tt> (o-e liés) ou de la 
+commande <tt>\c</tt> (cédille), mais sans que cela représente la fin
+d'un mot. La seconde, celle que je préfère, est <tt>c\oe{}ur</tt>
+et <tt>re\c{c}u</tt>, dans laquelle la fin de la commande est marquée
+par autre chose qu'un blanc, en l'occurrence une ou deux
+accolades, ce qui fait que les blancs sont ainsi
+toujours des séparations de mots.
+Il n'y a pas de paramètre en ligne de commande ni d'option à insérer dans le fichier
+source pour utiliser l'une ou l'autre de ces deux syntaxes.
+Elles sont toujours reconnues dans un fichier L<sup>A</sup>T<sub>E</sub>X.
+</p>
 
 <h3>ISO-8859-1</h3>
 
