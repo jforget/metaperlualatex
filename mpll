@@ -29,7 +29,7 @@ for i in $*
 do
   case $i in
     -v | --version)
-      echo This is mpll version 1.0
+      echo This is mpll version 1.0 alpha
       echo ------------
       lualatex -v
       echo ------------
