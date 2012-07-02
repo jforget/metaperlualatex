@@ -8,7 +8,10 @@ lualatex and of perltex.  Now, you can typeset documents using scripts
 written in Lua and in Perl. And figures in Metapost.
 
 Also provided in this repository, soleil.tex is a showcase for the new
-utility, a Latex document which uses Perl, Lua and Metapost.
+utility,  a Latex  document which  uses Perl,  Lua and  Metapost. This
+document is also  stored as soleil.pdf, so you  can compare soleil.tex
+with soleil.pdf  and imagine how  the PDF file was  generated, without
+having to install mpll.
 
 Installation
 ------------

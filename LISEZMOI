@@ -10,7 +10,10 @@ Lua ou Perl, comme vous préférez. Et vous pouvez y ajouter des figures
 générées par un script Metapost.
 
 Ce répertoire  fournit également soleil.tex,  un exemple d'utilisation
-de mpll, un document Latex qui fait appel à Perl, Lua et Metapost.
+de mpll,  un document Latex  qui fait appel  à Perl, Lua  et Metapost.
+Vous disposez  également de soleil.pdf, le résultat  de la génération,
+ce qui vous permet de consulter le contenu et de comprendre comment la
+génération a fonctionné sans avoir à installer l'outil mpll.
 
 Installation
 ------------
