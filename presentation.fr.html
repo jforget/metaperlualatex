@@ -482,7 +482,8 @@ d'adopter une attitude intermédiaire avec un ou plusieurs paramètres
 <p>Par opposition à LuaL<sup>A</sup>T<sub>E</sub>X,
 vous ne pouvez plus utiliser MetaPost de façon intégrée,
 vous êtes de nouveau obligés d'écrire deux fichiers séparés
-et de lancer deux commandes à la suite. Ou bien alors, programmez
+et de lancer deux commandes à la suite, <tt>mpost</tt>
+puis <tt>perltex</tt>. Ou bien alors, programmez
 vos dessins avec GD.pm, GIMP.pm, Image::Magick ou un module
 similaire et incluez le dessin obtenu dans votre document.</p> 
 
@@ -659,6 +660,11 @@ latex_cmdperl ();
 Hello
 
 </pre>
+<p>Cela dit, pour MetaPost, le manuel de John Hobby 
+présente plusieurs outils intégrés au langage et
+qui permettent de débuguer le diagramme en cours 
+de compilation.</p>
+
 <h3>Pour aller plus loin</h3>
 
 <p>Le source de l'outil <tt>mpll</tt> se trouve sur
