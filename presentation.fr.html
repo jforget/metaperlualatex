@@ -22,14 +22,16 @@ scriptable, les encodages.</p>
 <p>Supposons que l'on veuille écrire&nbsp;</p>
 <img src="ex.png" alt="texte : Grâce à Archimède, nous connaissons par coeur la valeur de pi, 3,1415926535" />
 <p>et que, contrairement à ce que l'on déclare dans le
-document, on n'arrive pas à se rappeler la valeur numérique de π.
-Selon le cas, nous avons l'ASCII à 7 bits, ISO-8859 ou UTF-8.</p>
+document, on n'arrive pas à se rappeler la valeur numérique de π.</p>
 
 <p>Remarque&nbsp;: la couleur jaunâtre ne vient pas du fait que j'ai 
 imprimé mon fichier L<sup>A</sup>T<sub>E</sub>X sur du papier vieilli.
 J'ai tout simplement effectué une copie d'écran, que j'ai coloriée ensuite
 avec <i>The GIMP</i> pour faire ressortir ces copies d'écran 
 par rapport au texte de la présentation.</p>
+
+<p>Pour écrire un source L<sup>A</sup>T<sub>E</sub>X, nous disposons
+de trois encodages, l'ASCII à 7&nbsp;bits, ISO-8859 ou UTF-8.</p>
 
 <h3>ASCII 7-bits</h3>
 
@@ -126,7 +128,9 @@ par c<span class='bon'>œ</span>ur la valeur de $\pi$,
 
 <p>Le problème des «&nbsp;o-e&nbsp;» liés est résolu. Normalement, on
 devrait même pouvoir taper le π (U+3C0) directement dans le texte, mais je n'y
-suis pas arrivé. Toujours est-il que cela ne nous donne pas la valeur numérique
+suis pas arrivé. De plus, j'ai des problèmes lorsque
+j'utilise «&nbsp;°&nbsp;» (U+B0) pour représenter le degré.
+Toujours est-il que cela ne nous donne pas la valeur numérique
 de π pour autant.</p>
 
 <h2>Et maintenant, amusons-nous&nbsp;!</h2>
@@ -416,10 +420,10 @@ Ainsi donc, il est possible de disposer de deux langages algorithmiques
 puissants et agréables lors de la composition d'un document.
 Les exemples ci-dessus sont simplistes, mais dans la réalité,
 il est possible d'avoir une logique de traitement plus évoluée,
-avec des boucles par exemple, aussi bien en Metapost qu'en Lua,
+avec des boucles par exemple, aussi bien en MetaPost qu'en Lua,
 et des accès à une base de données ou à Internet en Lua. Le peu de Lua que je connais
 pour l'instant me montre que c'est un langage sympathique
-et agréable et d'autre part j'aime bien Metapost, mais je continue à préférer Perl.</p>
+et agréable et d'autre part j'aime bien MetaPost, mais je continue à préférer Perl.</p>
 
 <p>Heureusement, il y a...</p>
 
@@ -492,7 +496,8 @@ en ISO-8859 ou codé en UTF-8.  Mais en 2012, qui veut
 revenir à ISO-8859&nbsp;?</p>
 
 <p>Avec PerlT<sub>E</sub>X, vous pouvez utiliser la syntaxe des
-environnements, pour définir un script «&nbsp;avant&nbsp;» et
+environnements, (<tt>\begin{<var>xxx</var>}</tt> ... <tt>\end{<var>xxx</var>}</tt>)
+pour définir un script «&nbsp;avant&nbsp;» et
 un script «&nbsp;après&nbsp;», encadrant une portion de texte.
 Tandis qu'avec LuaL<sup>A</sup>T<sub>E</sub>X, seul le fonctionnement
 en commande est possible.</p>
@@ -673,7 +678,8 @@ de compilation.</p>
 Dans le même dépôt, vous trouverez cette présentation
 ainsi qu'un document complet mettant à profit Perl et MetaPost
 (et un tout petit peu Lua). Ce document explique le phénomène
-que l'on peut observer au mois de décembre. Pendant l'automne,
+que l'on peut observer dans les régions tempérées de 
+l'hémisphère nord au mois de décembre. Pendant l'automne,
 le soleil se lève de plus en plus tard et se couche de plus en
 plus tôt. Cela n'étonne personne. De même, au printemps, le
 soleil se lève de plus en plus tôt et se couche de plus
@@ -733,8 +739,8 @@ sur fond blanc et les commentaires en vert pâle sur fond blanc.</p>
 <p>Néanmoins, mon éditeur de texte adopte le mode L<sup>A</sup>T<sub>E</sub>X,
 en raison entre autres de l'extension <tt>.tex</tt> de mon fichier source.
 Donc, chaque fois que je tape une double-quote <tt>U+22</tt>, 
-Emacs la transforme en deux apostrophes <tt>U+27 U+27</tt>
-ou en deux apostrophes inverses <tt>U+60 U+60</tt>, en fonction
+Emacs la transforme en deux apostrophes <tt>U+27&nbsp;U+27</tt>
+ou en deux apostrophes inverses <tt>U+60&nbsp;U+60</tt>, en fonction
 du caractère précédent. Très pratique lorsque l'on tape du L<sup>A</sup>T<sub>E</sub>X,
 mais très pénible lorsque l'on tape du Lua ou du Perl.
 Dans ce cas, je passe en <tt>fundamental-mode</tt>.</p>
@@ -792,7 +798,7 @@ Orwant, éditions O'Reilly France, ISBN 2-84177-140-7.
 <p>Sous forme électronique&nbsp;:</p>
 
 <ul>
-<li><a href="http://www.luatex.org/">LuaT<sub>E</sub>X</a></li>
+<li>Le site web <a href="http://www.luatex.org/">LuaT<sub>E</sub>X</a></li>
 
 <li><a href='http://tug.org/mailman/listinfo/luatex'>liste de diffusion</a> pour LuaT<sub>E</sub>X</li>
 
