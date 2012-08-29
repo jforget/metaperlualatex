@@ -1,0 +1,954 @@
+<html>
+<head>
+<title>LATEX -O fun</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<style>
+<!--
+.mauvais    { background-color: pink}
+.bon      { background-color: palegreen}
+-->
+</style>
+</head>
+<body>
+<h1>L<sup>A</sup>T<sub>E</sub>X -O fun</h1>
+
+<p>Or how to optimise L<sup>A</sup>T<sub>E</sub>X for the fun factor.</p>
+
+<h2>Encoding</h2>
+
+<p>Let us begin with the PITA for all script langages, encoding.</p>
+<p>Let us suppose we want to print</p>
+<img src="ex.png" alt="texte : Grâce à Archimède, nous connaissons par coeur la valeur de pi, 3,1415926535" />
+<p>which translates to</p>
+<blockquote>
+Thanks to Archimedes, we know the value of π, 3.1415926535.
+</blockquote>
+
+<p>For some reasons which you will guess in the course
+of the presentation, the examples are in French.
+In addition, suppose that, despite what we want to print, we
+cannot remember the numeric value for π.</p>
+
+<p>Remark: the yellowish colour does not come from some old paper
+on which I have printed the document. It comes from the fact
+that I have hard-copied the DVI or PDF output and then colorised the
+hard-copy file with The Gimp, so the hard-copies will stand out
+from the englobing HTML text.</p>
+
+<p>We have three encodings at our disposal, 7-bit ASCII, ISO-8859 and UTF-8.</p>
+
+<h3>7-bit ASCII</h3>
+
+<p>With the earliest versions of T<sub>E</sub>X, we had to
+use 7-bit ASCII. This was no piece of cake for native French
+(or German, or Spanish, or etc) speakers.</p>
+<p><em>file ex1.tex</em></p>
+<pre>
+\documentclass[a4paper]{article}
+
+\begin{document}
+
+Gr<span class='mauvais'>\^a</span>ce <span class='mauvais'>\`a</span> Archim<span class='mauvais'>\`e</span>de, nous connaissons
+par c<span class='mauvais'>\oe{}</span>ur la valeur de $\pi$,
+% que j'aime a faire apprendre un nombre utile aux sages
+% 123 1 1234 1 12345 123456789 12 123456 12345 123 12345
+3,1415926535.
+
+\end{document}
+</pre>
+<p>
+For the OE ligature (in the text above) and for the cedilla,
+there are two ways to code it. The first one, which
+I dislike, is
+<tt>c\oe&nbsp;ur</tt> for "cœur" and <tt>re\c&nbsp;cu</tt>
+for "reçu", the
+whitespace being used to end the 
+<tt>\oe</tt> (o-e ligature) command or the
+<tt>\c</tt> (cedilla) command, but without representing
+the end of a word. The second way, which I prefer, is
+<tt>c\oe{}ur</tt>
+and <tt>re\c{c}u</tt>, in which the end of the command
+is not marked with whitespace, but with a curly brace
+and in which whitespace thus marks the end of a word.
+The choice between these two syntaxes is triggered neither
+by a command-line parameter, nor by an option inserted into
+the source file. They are both available at all time, the
+choice is just a personal preference of the author when
+writing the L<sup>A</sup>T<sub>E</sub>X file.
+</p>
+
+<h3>ISO-8859-1</h3>
+
+<p>Starting with version 3 of T<sub>E</sub>X, it was possible
+to use ISO-8859-1, or <tt>latin-1</tt> if you prefer.</p>
+<p><em>file ex2.tex</em></p>
+<pre>
+<span class='bon'>% -*- encoding: iso-8859-1 -*-</span>
+\documentclass[a4paper]{article}
+<span class='bon'>\usepackage[T1]{fontenc}</span>
+
+\begin{document}
+
+Gr<span class='bon'>â</span>ce <span class='bon'>à</span> Archim<span class='bon'>è</span>de, nous connaissons
+par c<span class='mauvais'>\oe{}</span>ur la valeur de $\pi$,
+% que j'aime à faire apprendre un nombre utile aux sages
+% 123 1 1234 1 12345 123456789 12 123456 12345 123 12345
+3,1415926535.
+
+\end{document}
+</pre>
+
+<p>The comment tagged with <tt>-*-</tt> instructs Emacs to use
+ISO-8859-1 encoding, but L<sup>A</sup>T<sub>E</sub>X does not care. 
+The use of the <tt>fontenc</tt> module has the same effect, except that
+this time, L<sup>A</sup>T<sub>E</sub>X gets the message while
+Emacs does not care. Some Vim users have
+told me that Vim automatically detects the proper encoding
+and that the use of a mode line for this purpose is not advised.
+I did not check, because the Vi clone I use is Emacs in Viper mode.
+</p>
+
+<p>Now, the accented vowels and the "ç"'s are easily typed, but
+there are still problems with the "oe" ligatures.
+</p>
+
+<h3>UTF-8</h3>
+
+<p>But now, in the second decade of the XXI<sup>th</sup> century,
+Unicode and UTF-8 are becoming prevalent.
+</p>
+<p><em>file ex3.tex</em></p>
+<pre>
+<span class='bon'>% -*- encoding: utf-8 -*-</span>
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+<span class='bon'>\usepackage[utf8]{inputenc}</span>
+
+\begin{document}
+
+Gr<span class='bon'>â</span>ce <span class='bon'>à</span> Archim<span class='bon'>è</span>de, nous connaissons
+par c<span class='bon'>œ</span>ur la valeur de $\pi$,
+% que j'aime à faire apprendre un nombre utile aux sages
+% 123 1 1234 1 12345 123456789 12 123456 12345 123 12345
+3,1415926535.
+
+\end{document}
+</pre>
+
+<p>The problem of "oe" ligatures is now solved. It should be possible
+to enter directly the 
+π character (U+3C0), but I have not found how.
+In addition I still have problems with "°" for "degree" (U+B0). Anyway,
+we still cannot obtain the numerical value for π.
+</p>
+
+<h2>And now, we start having fun!</h2>
+
+<p>Even if T<sub>E</sub>X and L<sup>A</sup>T<sub>E</sub>X are
+programming languages, you must admit their syntax is not
+pleasing. It is not easy to loop or to compute arithmetic
+formulas. And you cannot obtain the numerical value for π.
+Fortunately, there is...</p>
+
+<h3>LuaL<sup>A</sup>T<sub>E</sub>X</h3>
+
+<p>LuaT<sub>E</sub>X, also known as LuaL<sup>A</sup>T<sub>E</sub>X,
+is a rewrite of the T<sub>E</sub>X engine, with a few additional
+features.</p>
+
+<ol>
+<li>Output using the PDF format instead of DVI,</li>
+<li>Use of TTF and OTF fonts in addition to METAFONT,</li>
+<li>And last, but not the least, an embedded interpreter!</li>
+</ol>
+
+<p>Indeed, the document writer has access to a Lua interpreter
+inside the document. For example:</p>
+<p><em>file ex4.tex</em></p>
+<pre>
+% -*- encoding: utf-8 -*-
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+<span class='bon'>\usepackage[utf8]{luainputenc}</span> 
+
+\begin{document}
+
+Grâce à Archimède, nous connaissons
+par cœur la valeur de $\pi$,
+<span class='bon'>\directlua{tex.sprint(math.pi)}</span>.
+
+\end{document}
+</pre>
+
+<p>The document is generated with:</p>
+<pre>
+lualatex ex4
+</pre>
+
+<p>that's all! Note that Lua gives more digits
+than the mnemonic verse.</p>
+
+<img src="ex4.png" alt="texte : Grâce à Archimède, nous connaissons par coeur la valeur de pi, 3,1415926535898" />
+
+<p>A few remarks.</p>
+
+<p>Actually, using the embedded Lua interpreter goes
+far beyond generating a few chunks of  L<sup>A</sup>T<sub>E</sub>X source and inserting
+them into the document. You can write Lua functions
+and register them as callbacks, to alter the way
+the typesetting engine works, or to process
+"attributes" (a new feature of the LuaT<sub>E</sub>X
+engine). I leave that with the wizards and the gurus,
+just generating chunks of text is sufficient for
+me to have fun.
+</p>
+
+<p>LuaT<sub>E</sub>X is still beta. The stable version is promised
+for some time in 2012. But for persons like me who do not want
+to tweak the engine, I think the current version is stable enough
+and we have nothing to fear about incompatibilities and regressions.
+</p>
+
+<p>A paradox: the Lua authors make it clear that the core Lua
+will not support UTF-8. You can still be assured that if you
+feed UTF-8 strings to Lua, Lua will deal with them as byte
+strings and will return them to you without alterations.
+But dedicated char functions, like substring extractions
+and regular expressions consider that you use
+ISO-8859-1 or even, in some cases, ASCII.
+The paradox is that
+LuaL<sup>A</sup>T<sub>E</sub>X only deals with UTF-8, 
+which is not and will never be the native encoding of Lua.
+</p>
+
+<p>There are a few interferences between the syntax analysis
+by L<sup>A</sup>T<sub>E</sub>X and the analysis by Lua.
+If you code your Lua script on several lines, with cautious
+indent, Lua will get a one-liner. Especially, if 
+you write a comment thus:</p>
+<pre>
+\directlua{-- we print pi's numerical value
+tex.sprint(math.pi)
+}
+</pre>
+<p>Lua will receive only a long single comment and thus
+will generate nothing. Yet, you can use a percent for comments:</p>
+<pre>
+\directlua{% we print pi's numerical value
+tex.sprint(math.pi)
+}
+</pre>
+<p>The corollary of this remark is that it is very difficult
+to use the modulus operator and the regular expressions
+in a Lua script embedded into a
+LuaL<sup>A</sup>T<sub>E</sub>X document.</p>
+
+<p>The advice is to split the file into a Lua-only
+source file and a L<sup>A</sup>T<sub>E</sub>X-mainly
+source file. The Lua-only file will be parsed only by Lua,
+not by L<sup>A</sup>T<sub>E</sub>X.
+Let us forget L<sup>A</sup>T<sub>E</sub>X typesetting
+for a moment and let us use a command line REPL. If we
+want to print π using a mnemonic poem we can write:
+</p>
+
+<p><em>file ex5.lua</em></p>
+<pre>
+-- -*- encoding: latin-1 -*-
+--[[
+     Function to convert a mnemonic poem into a number
+
+     lg_part_ent : number of digits of the integer part
+     poeme : string containing the poem's text
+
+     returns a string representation of the number
+]]
+
+local transco = { ["à"] = "a", ["è"] = "e", ["é"] = "e", ["ê"] = "e",
+};
+function mnemo_to_num(lg_part_ent, poeme)
+
+  -- get rid of accents
+  poeme = string.gsub(poeme, ".", transco);
+
+  -- extract the number's digits
+  local nombre = "";
+  for mot in string.gmatch(poeme, "%a+") do
+    nombre = nombre .. (string.len(mot) % 10)
+  end
+
+  -- separate the integer part from the decimal part
+  local part_ent = string.sub(nombre, 1, lg_part_ent)
+  local part_dec = string.sub(nombre, lg_part_ent + 1, string.len(nombre))
+
+  -- insert whitespace every three digits
+  part_ent = string.reverse(part_ent)
+  part_ent = string.gsub(part_ent, "(%d%d%d)", "%1 ")
+  part_ent = string.reverse(part_ent)
+  part_dec = string.gsub(part_dec, "(%d%d%d)", "%1 ")
+
+  -- rebuild the number
+  nombre = part_ent .. "," .. part_dec
+  return nombre
+end
+</pre>
+
+<p><em>file ex5-bis.lua</em></p>
+<pre>
+-- -*- encoding: latin-1 -*-
+
+<span class='bon'>dofile "ex5.lua";</span>
+
+print(mnemo_to_num(1, [[
+Que j'aime à faire apprendre un nombre utile aux sages,
+Immortel Archimède, artiste, ingénieur,
+Qui, de ton jugement, peut priser la valeur ?
+Pour moi, ton problème eut de pareils avantages.
+]] ))
+</pre>
+
+<p>This example shows you how to include an external Lua
+file into another Lua file. It shows you also the syntax
+for multiline strings, enclosed between "<tt>[[</tt>"
+and "<tt>]]</tt>". The use of "backslash-n" within double quotes
+is allowed, but it is tedious we you have many long lines.
+And now, let us return to
+LuaL<sup>A</sup>T<sub>E</sub>X:</p>
+
+<p><em>file ex5.tex</em></p>
+
+<pre>
+% -*- encoding: utf-8 -*-
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+
+\begin{document}
+
+Grâce à Archimède, nous connaissons
+par cœur la valeur de $\pi$,
+\directlua{
+dofile "ex5.lua";
+tex.sprint(mnemo_to_num(1, "
+Que j'aime a faire apprendre un nombre utile aux sages,
+Immortel Archimede, artiste, ingenieur,
+Qui, de ton jugement, peut priser la valeur ?
+Pour moi, ton probleme eut de pareils avantages.
+"))}
+
+\end{document}
+</pre>
+
+<p>Two  remarks. First, the string transmitted by L<sup>A</sup>T<sub>E</sub>X
+to Lua contains no accented letter, because the
+<tt>ex5.lua</tt> script expects an ISO-8859-1
+string (the letters of which <tt>ex5.lua</tt> immediately converts
+to ASCII) and the <tt>ex5.tex</tt> document's encoding is UTF-8.
+Secondly, the transmitted string is delimited by double quotes, 
+not double square brackets, because anyhow the string will
+be flattened to a single line and the newlines will be replaced
+by plain spaces when 
+LuaL<sup>A</sup>T<sub>E</sub>X executes Lua code.</p>
+
+<img src="ex5.png" alt="texte : Grâce à Archimède, nous connaissons par coeur la valeur de pi, 3,141 592 653 589 793 238 462 643 383 279" />
+
+<p>Thus, it is possible to have a powerful and nice algorithmic
+language when typesetting a L<sup>A</sup>T<sub>E</sub>X document.
+The examples above are simplistic, but in actual documents, 
+you can have a much more complex processing scheme with
+loops, or with reading a database or accessing the Internet.
+The few elements of Lua that I know make me think that
+Lua is nice, but I still prefer Perl.</p>
+
+<h3>LuaL<sup>A</sup>T<sub>E</sub>X and MetaPost</h3>
+
+<p>Actually, this is not one interpreter which is embedded in LuaL<sup>A</sup>T<sub>E</sub>X,
+but two! There is a MetaPost interpreter in addition to 
+the Lua interpreter. MetaPost is a script language to
+draw pictures, derived from the font description language
+METAFONT. With the original L<sup>A</sup>T<sub>E</sub>X implementation, 
+it was a separate <tt>mpost</tt> executable which would
+compile a separate <tt>toto.mp</tt> source file and
+generate one or more PostScript files 
+<tt>toto.1</tt>,  <tt>toto.2</tt>,  <tt>toto.3</tt>
+and so on. The pictures were included into the 
+L<sup>A</sup>T<sub>E</sub>X document when the
+<tt>latex</tt> program was run. So you had to write
+either a script or a makefile to run the <tt>mpost</tt>
+command and then the <tt>latex</tt> command. Now, with
+LuaL<sup>A</sup>T<sub>E</sub>X, everything is coded in the
+same source file:</p>
+
+<p><em>file ex6.tex</em></p>
+<pre>
+% -*- encoding: utf-8 -*-
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+<span class='bon'>\usepackage{luamplib}</span>
+
+\begin{document}
+
+Grâce à Archimède, nous connaissons
+par cœur la valeur de $\pi$,
+\directlua{tex.sprint(math.pi)}.
+
+Et remercions également ce mathématicien anonyme
+qui nous a donné l'équation~:
+
+zéro plus zéro égale, la tête à Toto~!
+
+<span class='bon'>\begin{mplibcode}
+beginfig(1);
+z1 = (-15, 10); % oeil gauche
+z2 = ( 15, 10); % oeil droit
+rayon = 5;
+largeur_egale = 1.5 * rayon;
+grosrayon = 30;
+% zero
+draw ((0, rayon) .. (rayon, 0) .. (0, - rayon) .. (- rayon, 0) .. cycle) shifted z1;
+% plus
+draw (0, rayon) -- (0, - rayon);
+draw (- rayon, 0) -- (rayon, 0);
+% zero
+draw ((0, rayon) .. (rayon, 0) .. (0, - rayon) .. (- rayon, 0) .. cycle) shifted z2;
+% egale
+draw ((-largeur_egale, 0) -- (largeur_egale, 0)) shifted (0, -2 * rayon);
+draw ((-largeur_egale, 0) -- (largeur_egale, 0)) shifted (0, -3 * rayon);
+% la tete a Toto
+draw (grosrayon, 0) .. (0, grosrayon) .. (- grosrayon, 0) .. (0, - grosrayon) .. cycle;
+endfig;
+\end{mplibcode}</span>
+
+\end{document}
+</pre>
+
+<p>And the document is generated with a single command:</p>
+<pre>
+lualatex ex6
+</pre>
+<img src="ex6.png" alt="La même chose, avec 'zéro plus zéro égale la tête à Toto" />
+
+<p>I restate my previous conclusion.
+Thus, it is possible to have two powerful and nice algorithmic
+languages when typesetting a L<sup>A</sup>T<sub>E</sub>X document.
+The examples above are simplistic, but in actual documents, 
+you can have a much more complex processing scheme with
+loops, in MetaPost as well as in Lua, or with reading a
+database or accessing the Internet in Lua.
+The few elements of Lua that I know make me think that
+Lua is nice and I like MetaPost, but I still prefer Perl.</p>
+
+<p>Fortunately, there is...</p>
+
+<h3>Perltex</h3>
+
+<p>Perltex is not a new typesetting engine, rival
+to LuaT<sub>E</sub>X. It is a glue script between
+the T<sub>E</sub>X engine and a Perl script.
+Perltex is not available on
+<a href='http://www.cpan.org/'>CPAN</a>, but you can find it on
+<a href='http://www.ctan.org/'>CTAN</a> (<i lang='en'>Comprehensive T<sub>E</sub>X Archive Network</i>)
+which is nearly as rich.
+</p>
+
+<p>The source file looks like:</p>
+<p><em>file ex7.tex</em></p>
+<pre>
+% -*- encoding: utf-8 -*-
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+<span class='bon'>\usepackage{perltex}</span>
+
+<span class='bon'>\perlnewcommand{\pinum}[0]{ 4 * atan2(1, 1) }</span>
+
+\begin{document}
+
+Grâce à Archimède, nous connaissons
+par cœur la valeur de $\pi$, <span class='bon'>\pinum</span>.
+
+\end{document}
+</pre>
+<p>And the generation is run with:</p>
+<pre>
+perltex --nosafe ex7.tex
+</pre>
+<p>if you want a DVI file or with:</p>
+<pre>
+perltex --latex=pdflatex --nosafe ex7.tex
+</pre>
+<p>if you want a PDF file. This gives you:</p>
+<img src="ex7.png" alt="texte : Grâce à Archimède, nous connaissons par coeur la valeur de pi, 3,14159265358979" />
+
+<p>A few remarks.</p>
+
+<p>As you can guess, the Perl statements defined with
+<tt>\perlnewcommand</tt>
+are compiled and executed with an <tt>eval</tt>.
+The default option is to run this <tt>eval</tt>
+in a sandbox, thanks to the <tt>Safe.pm</tt>
+module. The <tt>--nosafe</tt> parameter
+allows you to use a plain <tt>eval</tt> provided
+the author of the Perl function is the same as the
+author of the L<sup>A</sup>T<sub>E</sub>X document.
+If your document uses a Perl script of dubious 
+origin, you should use the <tt>--safe</tt>
+option. You can also use an medium protection
+with one or more 
+<tt>--permit:</tt><var>xxx</var> parameters.</p>
+
+<p>Unlike LuaL<sup>A</sup>T<sub>E</sub>X,
+you cannot integrate MetaPost source in your 
+L<sup>A</sup>T<sub>E</sub>X document. You have to
+describe your pictures in a separate source file
+and use two commands <tt>mpost</tt> then <tt>perltex</tt> to typeset your document.
+Or else, you can use <tt>GD.pm</tt>, <tt>Gimp.pm</tt>,
+<tt>Image::Magick</tt> and the like to generate
+picture files and then include them in your document.
+</p> 
+
+<p>On the other hand, you have again the choice between
+ISO-8859 and UTF-8.  But in 2012, who wants to go back
+to ISO-8859?</p>
+
+<p>With PerlT<sub>E</sub>X, you can use the
+L<sup>A</sup>T<sub>E</sub>X environment syntax
+(<tt>\begin{<var>xxx</var>}</tt> ... <tt>\end{<var>xxx</var>}</tt>)
+to define two commands,
+one for entering the environment and another for exiting
+the environment. This facility is not available with
+LuaL<sup>A</sup>T<sub>E</sub>X, you can only code
+independant commands.</p>
+
+<h3>Metaperlualatex</h3>
+
+<p>Do you need to adopt  LuaL<sup>A</sup>T<sub>E</sub>X and
+be bothered by the one-lining feature? Do you have
+to adopt PerlT<sub>E</sub>X and complain about the missing
+MetaPost interpreter? No! I have created a program which
+merges the good points of both tools, allowing you not to
+be bothered by their shortcomings. This tool gives
+you a variant or L<sup>A</sup>T<sub>E</sub>X with
+a Lua embedded interpreter, a Perl embedded interpreter
+and a MetaPost embedded inerpreter. It is named
+<strong>Metaperlualatex</strong>.</p>
+
+<p>It basically consists of a single shell line:</p>
+
+<pre>
+perltex --latex=lualatex $*
+</pre>
+
+<p>Actually, the implementation is a bit more convoluted,
+but above is the core of the program. A document looks like:</p>
+
+<p><em>file ex8.tex</em></p>
+<pre>
+% -*- encoding: utf-8 -*-
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+<span class='bon'>\usepackage[utf8]{luainputenc}
+\usepackage{perltex}
+\usepackage{luamplib}</span>
+
+<span class='bon'>\perlnewcommand{\mnemotonum}[2]</span>{ my ($lg_part_ent, $mnemo) = @_; 
+use v5.10;
+$mnemo =~ s/\\[`']//g;
+my @mots = $mnemo =~ /(\w+)/g;
+my $nombre = join '', map { length($_) % 10 } @mots;
+my $partie_ent = reverse substr($nombre, 0, $lg_part_ent);
+$partie_ent =~ s/(\d\d\d)/$1 /g;
+$partie_ent = reverse $partie_ent;
+my $partie_dec = substr($nombre, $lg_part_ent);
+$partie_dec =~ s/(\d\d\d)/$1 /g;
+$partie_dec =~ s/\s+$//;
+return "$partie_ent,$partie_dec"; }
+
+\begin{document}
+
+Grâce à Archimède, nous connaissons
+par cœur la valeur de $\pi$,
+<span class='bon'>\directlua{tex.sprint(math.pi)}</span>,
+ou plus précisément
+<span class='bon'>\mnemotonum</span>{1}{Que j'aime à faire apprendre un nombre utile aux sages
+	       Immortel Archimède, artiste, ingénieur,
+	       Toi de qui Syracuse aime encore la gloire,
+	       Soit ton nom conservé par de savants grimoires !
+	       Jadis, mystérieux, un problème bloquait
+	       Tout l'admirable procédé, l'oeuvre grandiose
+	       Que Pythagore découvrit aux anciens Grecs.
+	       Ô quadrature ! vieux tourment du philosophe !
+	       Insoluble rondeur, trop longtemps vous avez
+	       Défié Pythagore et ses imitateurs.
+	       Comment intégrer l'espace plan circulaire ?
+	       Former un triangle auquel il équivaudra ?
+	       Nouvelle invention : Archimède inscrira 
+	       Dedans un hexagone ; appréciera son aire
+	       Fonction du rayon. Pas trop ne s'y tiendra :
+	       Dédoublera chaque élément antérieur ;
+	       Toujours de l'orbe calculée approchera ;
+	       Définira limite ; enfin l'arc, le limiteur
+	       De cet inquiétant cercle, ennemi trop rebelle !
+	       Professeur, enseignez son problème avec zèle !...
+}.
+
+Et remercions également ce mathématicien anonyme
+qui nous a donné l'équation~:
+
+zéro plus zéro égale, la tête à Toto~!
+
+<span class='bon'>\begin{mplibcode}</span>
+beginfig(1);
+z1 = (-15, 10); % oeil gauche
+z2 = ( 15, 10); % oeil droit
+rayon = 5;
+largeur_egale = 1.5 * rayon;
+grosrayon = 30;
+% zéro
+draw ((0, rayon) .. (rayon, 0) .. (0, - rayon) .. (- rayon, 0) .. cycle) shifted z1;
+% plus
+draw (0, rayon) -- (0, - rayon);
+draw (- rayon, 0) -- (rayon, 0);
+% zéro
+draw ((0, rayon) .. (rayon, 0) .. (0, - rayon) .. (- rayon, 0) .. cycle) shifted z2;
+% égale
+draw ((-largeur_egale, 0) -- (largeur_egale, 0)) shifted (0, -2 * rayon);
+draw ((-largeur_egale, 0) -- (largeur_egale, 0)) shifted (0, -3 * rayon);
+% la tête à Toto
+draw (grosrayon, 0) .. (0, grosrayon) .. (- grosrayon, 0) .. (0, - grosrayon) .. cycle;
+endfig;
+<span class='bon'>\end{mplibcode}</span>
+\end{document}
+</pre>
+<p>The document is generated with:</p>
+<pre>
+mpll --nosafe ex8
+</pre>
+
+<img src="ex8.png" alt="texte : Grâce à Archimède, nous connaissons par coeur la valeur de pi, 3,1415926535898, ou plus précisément 3,14159265358979" />
+
+<h3>Debugging</h3>
+
+<p>Although there are quite a gew good Perl debuggers, 
+the usual method consists in inserting <tt>print</tt>
+statements (or similar, like <tt>warn</tt>) into the debugged
+program. This is this method I use when debugging a
+ metaperlualatex document.</p>
+
+<p><em>file ex9.tex</em></p>
+<pre>
+% -*- encoding: utf-8 -*-
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{perltex}
+\usepackage{luamplib}
+
+\perlnewcommand{\cmdperl}[0]{ <span class='bon'>print "\ndébug Perl\n";</span> return "Hello" }
+
+\begin{document}
+
+\cmdperl{}
+\luadirect{<span class='bon'>print();print("débug Lua");</span> tex.sprint("world")},
+<span class='bon'>\message{débug Latex}</span>
+
+\end{document}
+</pre>
+<p>Which results in the following standard output:</p>
+<pre>
+This is LuaTeX, Version beta-0.50.0-2010010505
+[ cut ]
+(/usr/share/texmf-texlive/tex/luatex/luamplib/luamplib.lua)) (./ex9.pipe)
+(./ex9.pipe) (./ex9.frpl) (./ex9.aux) (./ex9.pipe
+<span class='bon'>d'ebug Perl</span>
+) (./ex9.pipe) (./ex9.frpl)
+<span class='bon'>débug Lua</span>
+
+<span class='bon'>débug Latex</span> [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] (./ex9.aux)
+ )
+[ cut ]
+</pre>
+
+<p>Yet, for the Perl part, you can read the <tt>ex9.lgpl</tt> file,
+which gives you the log of the exchanges between
+L<sup>A</sup>T<sub>E</sub>X and Perl:</p>
+<pre>
+  
+############################### PERL CODE ################################
+sub latex_cmdperl { print "\nd\'ebug Perl\n"; return "Hello" }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LATEX RESULT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+############################### PERL CODE ################################
+latex_cmdperl ();
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LATEX RESULT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Hello
+
+</pre>
+
+<p>As for MetaPost, John Hobby's manual describes several
+tools instegrated in the language and 
+which help debugging the currently compiling picture.</p>
+
+<h3>Going Farther</h3>
+
+<p>The source file of the <tt>mpll</tt> tool is available on
+<a href="https://github.com/">Github</a>, at
+<a href="https://github.com/jforget/metaperlualatex"><tt>https://github.com/jforget/metaperlualatex</tt></a>.
+In the same repository, you will find this presentation
+both in French and in English, plus a actual document
+making good use of Perl's and MetaPost's capabilities
+also with a little Lua. This document (in French) explains
+the following phenomenon, which occurs in December
+in the temperate areas of the Northern Hemisphere.
+During the autumn, the sun rises later and later, while
+it sets sooner and sooner. No surprises there.
+Likewise, during the spring, the sun rises earlier
+and earlier in the morning and sets later and later
+in the evening. No surprise there either.
+But for a few days during December, the sun rises later
+and later and sets later and later. In other words,
+the daylight increases in the morning and decreases
+in the evening. The aim of the document is to 
+explain this paradox. As you can guess, it
+uses
+<a href='https://metacpan.org/module/DateTime::Event::Sunrise'><tt>DateTime::Event::Sunrise</tt></a>
+heavily.</p>
+
+<h3>A few remarks</h3>
+
+<p>When I began taking interest in LuaL<sup>A</sup>T<sub>E</sub>X, 
+I installed it with the package manager of
+Ubuntu 10.4 <i lang='en'>Lucid Lynx</i>.
+The build date was January 2010. When processing 
+some drawings in my document, this version 
+produced this error:</p>
+
+<pre>
+! MetaPost capacity exceeded, sorry [main memory size=5000].
+</pre>
+
+<p>After <a href='http://tug.org/pipermail/luatex/2012-May/003652.html'>asking a question</a>
+and <a href='http://tug.org/pipermail/luatex/2012-May/003653.html'>obtaining an answer</a>
+on the <a href='http://tug.org/pipermail/luatex/'>mailing-list</a>,
+I installed the then-current version of LuaT<sub>E</sub>X, build date
+late May 2012, and the problem was solved.
+</p>
+
+<p>Before sending this message, I had checked the compilation of the
+MetaPost example from
+<a href='http://melusine.eu.org/syracuse/metapost/mpman/'>John Hobby's manual</a>
+and some of them would give the same overflow. I obtained
+other unrelated errors, which are not solved by the May 2012 build.
+</p>
+
+<p>Another remark, about source code editors. How can they
+display and edit a file containing L<sup>A</sup>T<sub>E</sub>X source,
+Lua source, Perl source and MetaPost source?
+For displaying source, I have disabled syntax coloring
+in my <tt>.emacs</tt> file with:
+</p>
+<pre>
+  (global-font-lock-mode -1)
+</pre>
+
+<p>If you know me, you know that I think that bicycles' sidewheels
+are a great thing for children who learn to bike. But when you
+have sufficient biking skills, may be even a racing bicycle, sidewheels
+are more a liability than an asset. The same thing applies
+to syntax coloring. As soon as you have above-newbie skills, 
+it is better to display source code with contrasting colors
+than to have an angry fruit-salad, where char strings are
+displayed in yellow on white, keywords in skyblue on white
+and comments in pale green on white.
+</p>
+
+<p>Even if I do not use syntax coloring, 
+I still like the shortcuts and commands provided by
+my editor. When I open a Metaperlualatex file, 
+Emacs adopts the L<sup>A</sup>T<sub>E</sub>X mode,
+because of the <tt>.tex</tt> extension of the filename.
+Therefore, each time I type a double-quote <tt>U+22</tt>
+Emacs converts it into two single-quotes <tt>U+27 U+27</tt>
+or into two back-quotes <tt>U+60 U+60</tt>, depending
+on the preceding character. Very convenient when typing
+some L<sup>A</sup>T<sub>E</sub>X, but very annoying
+when typing some Lua or some Perl.
+In this case, I invoke <tt>fundamental-mode</tt>.</p>
+
+<h2>Bibliography</h2>
+
+<p>On paper and in English:</p>
+<ul>
+
+<li><cite lang='en'>Programming in Lua</cite>, by
+Roberto Ierusalimschy, Lua.org publisher (yes, that's true), ISBN 85-903798-2-5.
+</li>
+
+<li><cite lang='en'>Programming Perl</cite>,
+<cite lang='en'>Perl Cookbook</cite>,
+<cite lang='en'>Advanced Perl Programming</cite>,
+<cite lang='en'>Perl Best Practices</cite>,
+<cite lang='en'>Perl Hacks</cite>,
+etc., mostly published by O'Reilly.
+</li>
+
+</ul>
+<p>On papier and in French:</p>
+<ul>
+
+<li><cite>La maîtrise de T<sub>E</sub>X et L<sup>A</sup>T<sub>E</sub>X</cite>, T. Lachand-Robert,
+Masson publisher, ISBN 2-225-84832-7.
+</li>
+
+<li><cite>L<sup>A</sup>T<sub>E</sub>X guide pratique</cite>
+Christian Rolland, Addison-Wesley publisher, ISBN 2-87908-104-1.
+</li>
+
+<li><cite>Les Cahiers GUTenberg n° 41</cite>, November 2001&nbsp;: MetaPost, le dessin sous *T<sub>E</sub>X, ISSN 1140-9304.
+</li>
+
+<li><cite>Les Cahiers GUTenberg n° 52--53</cite>, October 2009&nbsp;: MetaPost raconté aux piétons, ISSN 1140-9304.
+</li>
+
+<li><cite>Les Cahiers GUTenberg n° 54--55</cite>, October 2010&nbsp;: LuaT<sub>E</sub>X, ISSN 1140-9304.
+</li>
+
+<li><cite>Programmation en Perl</cite>, French translation of 
+<cite>Programming Perl, 3rd Edition</cite> Larry Wall, Tom Christiansen et Jon
+Orwant, O'Reilly France publisher, ISBN 2-84177-140-7.
+</li>
+
+<li><cite>De l'Art de Programmer en Perl</cite>, French translation
+of Damian Conway's <cite>Perl Best Practices</cite>, O'Reilly France
+publisher, ISBN 2-84177-369-8.
+</li>
+
+<li><cite>Perl Moderne</cite>, Sébastien Aperghis-Tramoni, Philippe Bruhat, Damien Krotkine et Jérôme Quelin, éditions Pearson, ISBN 978-2-7440-2419-1.
+</li>
+</ul>
+
+
+<p>In electronic form:</p>
+
+<ul>
+<li><a href="http://www.luatex.org/">LuaT<sub>E</sub>X</a></li>
+
+<li>LuaT<sub>E</sub>X <a href='http://tug.org/mailman/listinfo/luatex'>mailing-list</a> </li>
+
+<li> LuaT<sub>E</sub>X <a href='http://wiki.luatex.org/index.php/Main_Page'>wiki</a></li>
+
+<li><a href='http://www.ctan.org/tex-archive/macros/latex/contrib/perltex/'>PerlT<sub>E</sub>X</a></li>
+
+<li><a href='http://www.ctan.org/az.html'>CTAN</a> in general</li>
+
+<li>If this is not enough, you can try with <a href='http://www.duckduckgo.com'>Duck Duck Go</a>.</li>
+</ul>
+
+<h2>Thanks</h2>
+
+<p>I want to give all my thanks to the following people</p>
+
+<ul>
+
+<li><a href='http://www.c3.lanl.gov/~pakin/'>Scott Pakin</a>, author of
+<a href='http://www.ctan.org/pkg/perltex'>Perltex</a>, one of <tt>mpll</tt>'s components,
+</li>
+
+<li>The LuaT<sub>E</sub>X / LuaL<sup>A</sup>T<sub>E</sub>X <a href='http://www.luatex.org/team.html'>team</a>,
+with Hans Hagen, Harmut Henkel, Tako Hoekwater and many others, for creating
+the other <a href='http://www.luatex.org/'>component</a> of <tt>mpll</tt>,
+</li>
+
+<li><a href='http://www.inf.puc-rio.br/~roberto/'>Roberto Ierusalimschy</a>,
+<a href='http://www.inf.puc-rio.br/~celes/'>Waldemar Celes</a>
+and <a href='http://www.tecgraf.puc-rio.br/~lhf/'>Luiz Henrique de Figueiredo</a>,
+for having written <a href='http://www.lua.org/'>Lua</a>,
+a key component of
+LuaL<sup>A</sup>T<sub>E</sub>X and LuaT<sub>E</sub>X,
+</li>
+
+<li><a href='http://ect.bell-labs.com/who/hobby/index.shtml'>John Hobby</a>,
+whose <a href='http://ect.bell-labs.com/who/hobby/MetaPost.html'>MetaPost</a> language
+and <tt>mpost</tt> program
+have inspired the
+LuaL<sup>A</sup>T<sub>E</sub>X team,
+</li>
+
+<li><a href='http://research.microsoft.com/en-us/um/people/lamport/'>Leslie Lamport</a>
+who has created
+<a href='http://www.latex-project.org/'>L<sup>A</sup>T<sub>E</sub>X</a>,
+which inspired LuaL<sup>A</sup>T<sub>E</sub>X and Perltex,
+</li>
+
+<li><a href='http://www-cs-faculty.stanford.edu/~uno/'>Donald Knuth</a>, 
+whose <a href='http://metafont.tutorial.free.fr/'>MetaFont</a> language
+is the basis for MetaPost and whose 
+<a href='http://www.math.upenn.edu/TeX.html'>T<sub>E</sub>X</a>
+program paved the way to
+ L<sup>A</sup>T<sub>E</sub>X, LuaT<sub>E</sub>X
+and Perltex.
+</li>
+
+<li><a href='http://www.wall.org/~larry/'>Larry Wall</a>, and the
+<a href='https://www.ohloh.net/p/perl/contributors/19393924876974'>P5P</a>
+as well, for creating, developping and maintaining
+ <a href='http://www.perl.org/'>the Perl language</a>,
+</li>
+
+<li><a href='http://www1.cs.columbia.edu/~aho/'>Alfred Aho</a>,
+<a href='http://www.chessbase.com/newsdetail.asp?newsid=791'>Peter Weinberger</a>
+and <a href='http://cm.bell-labs.com/cm/cs/who/bwk/'>Brian Kernighan</a>,
+whose 
+<a href='http://cm.bell-labs.com/cm/cs/awkbook'>awk</a>
+language is a forerunner of Perl,
+</li>
+
+<li><a href='http://www.lysator.liu.se/c/dmr'>Dennis Ritchie</a>
+and <a href='http://www.cs.princeton.edu/~bwk/'>Brian Kernighan</a> 
+(again), whose
+<a href='http://www.lysator.liu.se/c/'>C language</a>
+is another forerunner of Perl,
+</li>
+
+<li><a href='http://en.wikipedia.org/wiki/Stephen_Bourne'>Stephen Bourne</a>,
+whose command-ling interpreter
+<a href='http://www.mrsapo.com/Bourne_shell'>shell</a>
+is the third main forerunner of Perl.
+</li>
+
+<li><a href='http://www.linfo.org/thompson.html'>Ken Thompson</a>
+and <a href='http://www.lysator.liu.se/c/dmr'>Dennis Ritchie</a> 
+(again), the creators of
+<a href='http://kb.iu.edu/data/agat.html'>Unix</a>
+which is the environment in which 
+Stephen Bourne's shell appeared, grew and thrived,
+</li>
+
+<li>Alan Turing, whose works paved the way to all others in the present list.
+</li>
+
+</ul>
+
+<p>Many thanks also the the publishing team of
+<cite>Petit Archimède</cite>, a French mathematics magazine,
+for their supplement to the 64--65 issue, from which I 
+found inspiration for poetry.
+</p>
+
+<h2>Legal Stuff</h2>
+
+<p>The <tt>mpll</tt> program and all Perl and Lua scripts
+in this document are published under the same terms
+as Perl: GPL and Artistic License.</p>
+
+<p>
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" /></a>
+<br />This presentation is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License</a>.
+</p>
+
+</body>
+</html>
