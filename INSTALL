@@ -1,0 +1,91 @@
+-*- encoding: utf-8; indent-tabs-mode: nil -*-
+
+Installation
+------------
+
+You need to install Perl, lualatex and perltex. If you want to compile
+the   sun.tex   file,   you   have   to  install   the   Perl   module
+DateTime::Event::Sunrise with its prerequisites.
+
+Perl  and  perltex are  rather  bug-free,  so  it should  not  present
+problems. lualatex is  still in active beta development,  so you might
+have problems.  And if  you need DateTime::Event::Sunrise, although it
+is has not moved for a long time, there are still bugs to fix.
+
+Perl
+----
+
+You need  at least Perl 5.10,  but since most  distributions provide a
+more recent Perl, you can use the Perl installed with your system.  Or
+you  can install  a Perl  interpreter  with perlbrew.  Unless you  use
+bleadperl, you should not encounter problems.
+
+mpll
+----
+
+Just copy  the file  into some directory  from your  $PATH environment
+variable.
+
+perltex
+-------
+
+You   should  try  first   the  perltex   package  provided   by  your
+distribution.   If you  need to  reinstall lualatex  (see  below), you
+should reinstall perltex at the same time and from the same source.
+
+lualatex
+--------
+
+At  first,  you should  try  the  lualatex  package provided  by  your
+distribution.  And you should check it with
+
+  mpll check-mp.tex
+
+If you obtain "Output written  on check-mp.pdf", you are lucky and you
+can skip to the next paragraph.
+
+If  you obtain an  error similar  to "Bad  argument to  format (string
+expected, got nil)", then you must install a new lualatex interpreter.
+For this, download a recent snapshot of tex-live and then run
+
+  install-tl
+
+from the directory where you have downloaded the tex-live snapshot.
+Or you can use
+
+  tlmgr
+
+After that, you  must again try to compile  chek-mp.tex. If you obtain
+an error  about "Illegal unit  of measure", then you  must comment-out
+the line requiring  the mplib package and activate  the line requiring
+the luatexko-mplib  package. It is  sufficient to place the  two files
+for this  package in the same  directory as the  whatever.tex file you
+are compiling.
+
+DateTime::Event::Sunrise
+------------------------
+
+If you  want to  generate soleil.pdf from  soleil.tex or  sun.pdf from
+sun.tex,  you  need  a  patched version  of  DateTime::Event::Sunrise.
+Install  the current  and  buggy version  0.0501  with your  preferred
+utility  cpan,  cpanp  or  cpanm,  so  at least,  you  will  have  all
+prerequisites.  Then donwload the DateTime-Event-Sunrise-0.0501.tar.gz
+archive from your favorite CPAN mirror
+
+  ftp://your.favorite.cpan.mirror.org/path/to/cpan/authors/id/R/RK/RKHILL/DateTime-Event-Sunrise-0.0501.tar.gz
+
+and download the dt-e-sunrise.patch patch from
+
+  https://rt.cpan.org/Public/Bug/Display.html?id=34770
+
+Then:
+
+  tar -zxvf DateTime-Event-Sunrise-0.0501.tar.gz
+  mv DateTime-Event-Sunrise-0.0501 DateTime-Event-Sunrise-0.0502
+  patch -p0 < dt-e-sunrise.patch
+  cd DateTime-Event-Sunrise-0.0502
+  perl Makefile.PL
+  make
+  make test
+  sudo make install
+
