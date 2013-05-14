@@ -62,6 +62,9 @@ the luatexko-mplib  package. It is  sufficient to place the  two files
 for this  package in the same  directory as the  whatever.tex file you
 are compiling.
 
+And if you  obtain an error about some unknown  dialect, do not worry.
+It is a harmless compatibility error between Babel and lualatex.
+
 DateTime::Event::Sunrise
 ------------------------
 

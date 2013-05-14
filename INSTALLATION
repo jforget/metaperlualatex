@@ -67,6 +67,10 @@ luatexko-mplib. Ultérieurement, il suffira de copier les deux fichiers
 de  luatexko-mplib dans  le  répertoire où  vous  compilez le  fichier
 machin.tex.
 
+Et si vous obtenez des erreurs concernant un dialecte inconnu, ignorez
+cette  erreur. C'est  juste un  léger problème  de  compatiblité entre
+Babel et lualatex.
+
 DateTime::Event::Sunrise
 ------------------------
 
