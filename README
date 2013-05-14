@@ -16,41 +16,18 @@ having to install mpll.
 Installation
 ------------
 
-You  need to  install first  lualatex and  perltex, either  using your
-system package manager, or  some TEX distribution's package manager. I
-used tlmgr from Tex-Live.
-
-Then you copy the mpll script to a directory from $PATH. That's all.
-
-If you want to generate soleil.pdf from soleil.tex, you need a patched
-version  of DateTime::Event::Sunrise.  Install  the current  and buggy
-version 0.0501 with your preferred utility cpan, cpanp or cpanm, so at
-least,   you  will   have  all   prerequisites.   Then   donwload  the
-DateTime-Event-Sunrise-0.0501.tar.gz  archive from your  favorite CPAN
-mirror
-
-  ftp://your.favorite.cpan.mirror.org/path/to/cpan/authors/id/R/RK/RKHILL/DateTime-Event-Sunrise-0.0501.tar.gz
-
-and download the dt-e-sunrise.patch patch from
-
-  https://rt.cpan.org/Public/Bug/Display.html?id=34770
-
-Then:
-
-  tar -zxvf DateTime-Event-Sunrise-0.0501.tar.gz
-  mv DateTime-Event-Sunrise-0.0501 DateTime-Event-Sunrise-0.0502
-  patch -p0 < dt-e-sunrise.patch
-  cd DateTime-Event-Sunrise-0.0502
-  perl Makefile.PL
-  make
-  make test
-  sudo make install
+Please refer to the INSTALL file.
 
 License
 -------
 
+The  luatexko-mplib.lua and luatexko-mplib.sty  files are  provided by
+Dohyun Kim and placed into the public domain.
+
 The mpll script  and the Perl and Lua scripts  inside the document are
 published under the same terms as Perl: GPL and Artistic License.
 
-The  document  is  published   under  the  Creative  Commons  License,
-Attribution-NonCommercial-ShareAlike 3.0 Unported (CC BY-NC-SA 3.0).
+The     presentation.fr.html,     presentation.en.html,    soleil.tex,
+soleil.pdf,  sun.tex and  sun.pdf  documents are  published under  the
+Creative  Commons  License,  Attribution-NonCommercial-ShareAlike  3.0
+Unported (CC BY-NC-SA 3.0).

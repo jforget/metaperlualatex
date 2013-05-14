@@ -18,44 +18,19 @@ génération a fonctionné sans avoir à installer l'outil mpll.
 Installation
 ------------
 
-Il  faut installer  au préalable  lualatex  et perltex,  soit avec  le
-gestionnaire de  paquets de votre distribution, soit  avec celui d'une
-distribution de TEX. Je l'ai fait avec tlmgr de Tex-Live.
-
-Ensuite, copiez le script mpll  dans un répertoire figurant dans votre
-$PATH. C'est tout.
-
-Si  vous voulez  générer soleil.pdf  à partir  de soleil.tex,  il vous
-faudra une  version patchée de  DateTime::Event::Sunrise. Installez la
-version  actuelle (et  buguée) avec  cpan, cpanp  ou cpanm,  selon vos
-préférences,  de sorte  d'avoir tous  les pré-requis  pour  ce module.
-Puis téléchargez l'archive DateTime-Event-Sunrise-0.0501.tar.gz depuis
-votre miroir CPAN favori.
-
-  ftp://votre.miroir.prefere.org/chemin/vers/cpan/authors/id/R/RK/RKHILL/DateTime-Event-Sunrise-0.0501.tar.gz
-
-et téléchargez le patch dt-e-sunrise.patch depuis
-
-  https://rt.cpan.org/Public/Bug/Display.html?id=34770
-
-Enfin :
-
-  tar -zxvf DateTime-Event-Sunrise-0.0501.tar.gz
-  mv DateTime-Event-Sunrise-0.0501 DateTime-Event-Sunrise-0.0502
-  patch -p0 < dt-e-sunrise.patch
-  cd DateTime-Event-Sunrise-0.0502
-  perl Makefile.PL
-  make
-  make test
-  sudo make install
+Veuillez vous reporter au fichier INSTALLATION.
 
 Licence
 -------
+
+Les fichiers luatexko-mplib.lua et luatexko-mplib.sty sont fournis par
+Dohyun Kim et placés dans le domaine public.
 
 Le programme  mpll, ainsi que les  scripts Perl et Lua  inclus dans le
 document,  sont diffusés  sous  les mêmes  termes  que Perl  : GPL  et
 Artistic License.
 
-Le document est diffusé sous la Licence Creative Commons Attribution -
-Pas  d'Utilisation  Commerciale  -   Partage  à  l'Identique  3.0  non
-transposé : CC BY-NC-SA.
+Les documents  presentation.fr.html, presentation.en.html, soleil.tex,
+soleil.pdf, sun.tex et sun.pdf  sont diffusés sous la Licence Creative
+Commons  Attribution  -  Pas  d'Utilisation Commerciale  -  Partage  à
+l'Identique 3.0 non transposé : CC BY-NC-SA.
