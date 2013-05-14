@@ -1,0 +1,1083 @@
+\documentclass[a4paper]{article}
+%\usepackage[english,frenchb,german,italian,latin]{babel}
+\usepackage[utf8]{luainputenc}
+\usepackage{luaotfload}
+%\usepackage{graphicx}
+%\usepackage{textcomp}
+%\usepackage[dvips]{hyperref}
+\usepackage{breakurl}
+\usepackage{perltex}
+%\usepackage{luamplib}
+\usepackage{luatexko-mplib}
+
+% marge haute 25.4 - 12 = 13.4 mm
+\topmargin=-12mm
+\headheight=0mm
+\headsep=4mm
+% marge basse 297 - (13.4 + 267 + 4) = 12.6mm
+\textheight=267mm
+
+% marge gauche 25,4mm,
+% marge droite 210 - (25,4 + 173) = 11,6mm
+\oddsidemargin=0mm
+\marginparsep=0mm
+\textwidth=173mm
+\columnsep=8mm
+
+%&Latex
+
+\renewcommand{\rmdefault}[0]{ppl}
+\renewcommand{\sfdefault}[0]{phv}
+\renewcommand{\ttdefault}[0]{pcr}
+
+\newcommand{\datenum}{\number\year-%
+\ifnum\month<10\relax0\fi\number\month-%
+\ifnum\day<10\relax0\fi\number\day}
+
+\newenvironment{texte}{\rmfamily}{}
+
+%\newcommand{\fran}[0]{\selectlanguage{french}}
+%\newcommand{\angl}[0]{\selectlanguage{english}}
+
+%\newcommand{\er}[0]{$^\mathrm{er}$}
+%\newcommand{\re}[0]{$^\mathrm{re}$}
+%\newcommand{\me}[0]{$^\mathrm{e}$}
+\newcommand{\ee}[0]{$^\mathrm{e}$}
+%\newcommand{\nd}[0]{$^\mathrm{nd}$}
+%\newcommand{\nth}[0]{$^\mathrm{th}$}
+
+\pagestyle{myheadings}
+\markright{\sffamily\upshape\kern 8mm\datenum\hfill {\bfseries\normalsize Trial of Metaperlua\LaTeX}\kern 15mm\hfill Page }
+
+%\NoAutoSpaceBeforeFDP
+
+\newcommand{\everisehhmmss}[0]{08:15:00}
+\newcommand{\evenoonhhmmss}[0]{12:00:00}
+\newcommand{\evesethhmmss}[0]{18:15:00}
+\newcommand{\dayrisehhmmss}[0]{08:15:00}
+\newcommand{\daynoonhhmmss}[0]{12:00:00}
+\newcommand{\daysethhmmss}[0]{18:15:00}
+\newcommand{\deltalight}[0]{0}
+\newcommand{\deltarise}[0]{0}
+\newcommand{\deltanoon}[0]{0}
+\newcommand{\deltaset}[0]{0}
+\newcommand{\formularise}[0]{\[ \deltanoon - \frac{\deltalight}{2} = \deltarise \]}
+\newcommand{\formulaset}[0]{\[ \deltanoon + \frac{\deltalight}{2} = \deltaset \]}
+
+\perlnewcommand{\riseandset}[5]{
+use v5.10;
+use strict;
+use warnings;
+use DateTime::Event::Sunrise;
+  my ($day_begin, $delta, $nb, $full, $show_day) = @_;
+  my ($year, $month, $day)  = unpack("a4 a2 a2", $day_begin);
+  my ($long, $lat) = qw/0 51.47/; # Greenwhich
+  # my ($long, $lat) = qw/-5.53 50.08/; # Penzance
+  my $lever = DateTime::Event::Sunrise->sunrise(longitude => $long
+                          , latitude => $lat, iteration => 1);
+  my $coucher = DateTime::Event::Sunrise->sunset(longitude => $long
+                           , latitude => $lat, iteration => 1);
+  #"Lever du soleil à " . $lever->next($day)->strftime("%H:%M:%S\n")
+  #. "Coucher du soleil à " . $coucher->next($day)->strftime("%H:%M:%S\n");
+
+  my ($aaaa, $mm, $jj) = unpack("a4 a2 a2", $show_day);
+  print "year $aaaa, month $mm, day $jj\n";
+  my $show_dt = DateTime->new(year => $aaaa, month => $mm, day => $jj, locale => 'en');
+  my $eve  = $show_dt->clone->add(days => -1);
+  print $eve->strftime("%Y-%m-%d%n");
+
+  my $dayrisehhmmss = '';
+  my $everisehhmmss = '';
+  my $evenoonhhmmss = '';
+  my $daynoonhhmmss = '';
+  my $evesethhmmss = '';
+  my $daysethhmmss = '';
+  my $deltalight = 0;
+  my $deltarise  = 0;
+  my $deltanoon  = 0;
+  my $deltaset   = 0;
+  my $show_day_found = 0;
+
+  my $table;
+  if ($full) {
+    $table = <<'TAB';
+\begin{tabular}{|c|c|c|c|r|r|r|r|}
+\hline
+Day & rise & noon & set & var.morn & var.even & var.length & var.noon \\ 
+\hline
+TAB
+  }
+  else {
+    $table = <<'TAB';
+\begin{tabular}{|c|c|c|r|r|}
+\hline
+Day & rise & set & var.morn & var.even \\
+\hline
+TAB
+  }
+  my $day  = DateTime->new(year => $year, month => $month, day => $day)->add(days => - $delta);
+  my $matin = $lever->next($day);
+  my $soir  = $coucher->next($day);
+  my $s_matin = $matin->hour * 3600 + $matin->minute * 60 + $matin->second;
+  my $s_soir  = $soir ->hour * 3600 + $soir ->minute * 60 + $soir ->second;
+  my $s_midi  = ($s_matin + $s_soir) / 2;
+  for (1..$nb) {
+    my $s_matin_av = $s_matin;
+    my $s_soir_av  = $s_soir;
+    my $s_midi_av  = $s_midi;
+
+    my $day  = $day->add(days => $delta);
+    my $matin = $lever->next($day);
+    my $soir  = $coucher->next($day);
+    $s_matin = $matin->hour * 3600 + $matin->minute * 60 + $matin->second;
+    $s_soir  = $soir ->hour * 3600 + $soir ->minute * 60 + $soir ->second;
+    $s_midi  = ($s_matin + $s_soir) / 2;
+    my $midi = $day->clone->add(seconds => $s_midi);
+
+    if ($full) {
+      my $variations = sprintf("& %d & %d & %d & %d\\\\\n", $s_matin - $s_matin_av, $s_soir - $s_soir_av, $s_matin_av - $s_matin + $s_soir - $s_soir_av, $s_midi - $s_midi_av);
+      $table .= $matin->strftime("%Y-%m-%d & %H:%M:%S\n") . '&' . $midi->strftime("%H:%M:%S") . '&' .  $soir->strftime("%H:%M:%S") . $variations;
+    }
+    else {
+      my $variations = sprintf("& %d & %d\\\\\n", $s_matin - $s_matin_av, $s_soir - $s_soir_av);
+      $table .= $matin->strftime("%Y-%m-%d & %H:%M:%S\n") . '&' .  $soir->strftime("%H:%M:%S") . $variations;
+    }
+
+    if ($day->strftime("%Y%m%d") eq $show_day) {
+      $dayrisehhmmss = $matin->strftime("%H:%M:%S");
+      $daynoonhhmmss = $midi->strftime("%H:%M:%S");
+      $daysethhmmss  = $soir->strftime("%H:%M:%S");
+      $deltalight    = $s_matin_av - $s_matin + $s_soir - $s_soir_av;
+      $deltarise     = $s_matin - $s_matin_av;
+      $deltanoon     = $s_midi  - $s_midi_av;
+      $deltaset      = $s_soir  - $s_soir_av;
+      #print $dayrisehhmmss, "\n";
+      $show_day_found = 1;
+    }
+    elsif ($show_day_found == 0) {
+      $everisehhmmss = $matin->strftime("%H:%M:%S");
+      $evenoonhhmmss = $midi->strftime("%H:%M:%S");
+      $evesethhmmss  = $soir->strftime("%H:%M:%S");
+    }
+
+  }
+  my ($sgn_rise, $sgn_noon, $sgn_set) = ('', '', '');
+  if ($deltarise > 0) {
+    $sgn_rise = '+';
+  }
+  if ($deltanoon > 0) {
+    $sgn_noon = '+';
+  }
+  if ($deltaset > 0) {
+    $sgn_set = '+';
+  }
+  $table .= <<"EOF";
+\\hline\n\\end{tabular}
+\\renewcommand{\\dayrisehhmmss}[0]{$dayrisehhmmss}
+\\renewcommand{\\everisehhmmss}[0]{$everisehhmmss}
+\\renewcommand{\\evenoonhhmmss}[0]{$evenoonhhmmss}
+\\renewcommand{\\daynoonhhmmss}[0]{$daynoonhhmmss}
+\\renewcommand{\\evesethhmmss}[0]{$evesethhmmss}
+\\renewcommand{\\daysethhmmss}[0]{$daysethhmmss}
+\\renewcommand{\\deltalight}[0]{$deltalight}
+\\renewcommand{\\deltarise}[0]{$deltarise}
+\\renewcommand{\\deltanoon}[0]{$deltanoon}
+\\renewcommand{\\deltaset}[0]{$deltaset}
+\\renewcommand{\\formularise}[0]{\\[ $sgn_noon$deltanoon - \\frac{$deltalight}{2} = $sgn_rise$deltarise \\]}
+\\renewcommand{\\formulaset}[0]{\\[ $sgn_noon$deltanoon + \\frac{$deltalight}{2} = $sgn_set$deltaset \\]}
+EOF
+  return $table
+}
+
+% Display a positive number in scientific mode with three digits after the decimal point
+% and computation of the gravitational force between Earth and another celestial body
+\directlua{
+function affsci(n)
+  local expo = math.floor(math.log(n) / math.log(10));
+  local mant = n / 10 ^ expo;
+  local factor = 1000;
+  mant = math.floor(mant * factor) / factor;
+  return tex.sprint("$" .. tostring(mant) .. string.char(92) .. "times{}10^{" .. tostring(expo) .. "}$")
+end
+function force(mass, dist)
+  local G         = 6.673e-11;
+  local earthmass = 5.973e+24;
+  return affsci(G * earthmass * mass / (dist * dist));
+end
+}
+\newcommand{\solarmass}{1.989e+30}
+\newcommand{\solardist}{1.49+12}
+\newcommand{\lunarmass}{7.374e22}
+\newcommand{\lunardist}{3.844e+8}
+\newcommand{\jupitermass}{1.898e+27}
+\newcommand{\jupiterdist}{778.3e+9}
+
+\begin{document}
+\begin{texte}
+\tolerance=1000
+
+%\angl
+
+\section{What Is The Problem}
+
+This text is a showcase for the \texttt{mpll} tool, or
+\textit{Metaperlualatex} tool. This is a document written in \LaTeX,
+and using Perl functions, MetaPost drawings
+and Lua functions (a few).
+
+Yet, this document is not an artificial document whose
+only purpose is to pack significant \textit{Metaperlualatex} features in a
+meaningless text. It is also an explanation 
+of a real phenomenon which can be observed
+in December (in temperate areas in the Northern hemisphere).
+During the fall, the sun rises later and later
+and sets sooner and sooner. No surprise there.
+During the spring, the sun rises earlier and earlier
+and sets later and later.
+No surprise there either. But from
+14th December until 1st January
+the sun rises later and later and it also sets later 
+and later. In other words, the day gradually replaces
+the night during the evening, while the night
+still gradually replaces the day during the morning,
+as can be seen in the table below.
+
+\vspace{2mm}
+\riseandset{20111205}{7}{9}{0}{20111224}
+\vspace{2mm}
+
+On the other side, this document is not a scientific publication
+with strict computations of celestial movements.
+It is rather an explanation for an intuitive
+understanding of some mostly unknown aspects
+of Earth's movement.
+
+For a more precise explanation, yet still readable by a layman,
+you can refer to the French-written book
+``Histoire de l'Heure en France'', by Jacques Gapaillard, 
+published by Vuibert -- ADAPT.
+
+As said above, the document applies to temperate areas in
+the Northern hemisphere. Around the equator, the variation 
+of daylight is not sufficient for the reasoning to be valid.
+In the polar areas, the continous night in winter and the continuous
+daylight in summer play havoc with the reasoning. And in temperate
+areas of the Southern hemisphere, it might be sufficient to
+shift all dates by six months, so the winter falls in June and the
+spring falls in September.
+
+\section{Solar Noon And The Variations Of Sunrise And Sunset}
+
+\subsection{The Various Types Of Noon}
+
+%\vspace{2mm}
+%\riseandset{20120210}{1}{10}{1}{20111224}
+%
+%\riseandset{20121101}{1}{10}{1}{20111224}
+%\vspace{2mm}
+
+If you explain to a XXIth Century person that there are
+two notions of ``noon'', the astronomical noon, which is
+the instant where the sun is at its highest in the 
+sky and is aligned with the local meridian, and the
+mean noon (or rather, ``mean time noon''), which can
+be obtained with a watch or a clock, if you explain that
+the offset between these two instants varies from a
+day to the other, this XXIth century person, if leaving
+in Great Britain for example, will answer
+``Of course, during the summer the astronomical noon is
+one hour behind the mean noon, while they are the same
+during winter.'' After a little thinking, this person
+will add that this also depends on the place you live
+in: ``This is for Kent, although in Cornwall, the
+astronomical noon is half-an-hour behind
+the mean noon in winter and one hour and a half minutes behind
+the mean noon in summer.''
+
+This person confuses the ``legal hour'' with the ``mean time''
+and the ``mean noon'' with the ``astronomical noon''.
+If we attempt to explain him that, for Kent in winter,
+the difference between ``astronomical noon'' and ``mean noon''
+may vary from 14 minutes in one direction
+and 17 minutes in the other, this person
+will no longer understand.
+
+On the other side, if you explain to a XVIIIth century
+person that the astronomical noon oscillates on both
+sides of the mean noon and that this gap may reach
+one quarter of an hour, it is more likely
+that this person will approve, especially if he works
+with clocks or sundials. This person would not understand
+the notion of ``legal time'', because it did not exist
+at the time, but he would understand the irregularities
+of the crossing of the meridian by the sun.
+In this time, it was well-known that the interval
+between two successive times when the sun crosses
+the meridian was not a constant. Yet, as J. Gapaillard
+explains in his book, even in this time, there were many people
+who erroneously thought that the apparent movement of
+the sun around the Earth was constant within one second.
+
+In the first part, we posit, without explanation, that
+the astronomical noon varies with respect to the 
+mean noon and we explain how this results in the 
+paradoxical variation of sunrise and sunset in December.
+In the second part, the document explains why there
+exists a variation between the astronomical noon
+and the mean noon.
+
+\subsection{Real Life Example}
+
+The table below give the sunrise and sunset hours, as well
+as the astronomical noon, in Greenwich in March 2011.
+Using Greenwich allows to equate the UTC time with
+the mean time (the formerly well-known GMT), within a
+few seconds. The table gives the time of sunrise,
+of sunset, of noon and the variations (in seconds)
+with the previous day. Also shown is the variation
+of the day length.
+
+\vspace{2mm}
+\riseandset{20110316}{1}{15}{1}{20110321}
+\vspace{2mm}
+
+Let us consider 21st March. On this date, the daylight
+increases by \deltalight{} seconds, that is, a bit less
+than 4 minutes. The solar noon switch
+from \evenoonhhmmss{} to \daynoonhhmmss{} so it shifts
+by \deltanoon{} seconds. One half of the daylight increase
+applies to the sunrise (which comes earlier) and the other half to sunset
+(which comes later). On the other side, the variation of 
+solar noon applies in full to both sunrise and sunset, and
+with the same direction. So, since the solar noon shifts
+by \deltanoon{} seconds and the daylight increases by
+\deltalight{} seconds, sunrise moves by
+
+\formularise{}
+
+that is, it moves backward from \everisehhmmss{} to \dayrisehhmmss{}
+while sunset moves by
+
+\formulaset{}
+
+that is, it moves forward from \evesethhmmss{} to \daysethhmmss{}.
+There is a difference, but most persons do not notice,
+since the daylight variation is much greater than the
+solar noon shift.
+
+\vspace{5mm}
+
+Now, let us consider 23th December.
+
+\vspace{2mm}
+\riseandset{20111216}{1}{15}{1}{20111223}
+\vspace{2mm}
+
+The daylight increases by \deltalight{} second,
+while the solar noon moves by \deltanoon{} seconds,
+shifting from \evenoonhhmmss{} to \daynoonhhmmss{}
+(allowing for rounding errors).
+The sunrise moves by:
+
+\formularise{}
+
+that is, the sunrise moves by \deltarise{}
+seconds, shifting from \everisehhmmss{} to \dayrisehhmmss{};
+while the sunset moves by:
+
+\formulaset{}
+
+that is, moves by \deltaset{} seconds,
+shifting from \evesethhmmss{} to \daysethhmmss{}.
+In this case, the solar noon variation is much greater
+that the half of the daylight variation, so the sunrise and
+the sunset move in the same direction.
+
+\vspace{5mm}
+
+\subsection{Mea Culpa}
+
+In the previous section, I made a logical mistake.
+I have equated the solar noon with the precise instant located midway
+between sunrise and sunset. This is nothing more than
+an approximation. Let use go back to the March table.
+
+\vspace{2mm}
+\riseandset{20110320}{1}{3}{1}{20110321}
+\vspace{2mm}
+
+On 20th March, the daylight lasts 12 h 10 mn 09 s, that is, 43~809 seconds.
+On 21st March, it lasts 12 h 14 mn 08 s, that is, 44~048 seconds
+and on 22nd March, it lasts  12 h 18 mn 5 s, that is, 44~285 seconds.
+This does not mean that on 20th March at 23 h 59, the daylight
+duration is 43~809 seconds and that on 21st March
+at 00 h 01 it becomes suddenly 44~048 seconds,
+The daylight duration is a continuous function.
+And since it varies by \deltalight{} seconds in
+24 hours, it varies by 60 seconds in 6 hours.
+This gives:
+
+\vspace{2mm}
+\begin{tabular}{|l|c|c|}
+\hline
+20~mars, noon & 43~809 & 12~h 10~mn 9~s \\
+\hline
+20~mars, 18~h & 43~869 & 12~h 11~mn 9~s \\
+\hline
+21~mars, 6~h & 43~988 & 12~h 13~mn 8~s \\
+\hline
+21~mars, noon & 44~048 & 12~h 14~mn 8~s \\
+\hline
+21~mars, 18~h & 44~108 & 12~h 15~mn 8~s \\
+\hline
+22~mars, 6~h & 44~225 & 12~h 17~mn 5~s \\
+\hline
+22~mars, noon & 44~285 & 12~h 18~mn 5~s \\
+\hline
+\end{tabular}
+\vspace{2mm}
+
+So, on 21st March, sunrise occurs 6 h 6 mn 34 s
+before solar noon and sunset occurs 
+6 h 7 mn 34 s seconds after solar noon.
+From this, we infer that solar noon really occurs
+at 12 h 7 mn 24 s instead of 12 h 7 mn 54 s
+as printed in the table above.
+
+The difference between solar noon and the
+middle of the daylight is proportional both to the
+daylight variation (maximum at the equinoxes)
+and to the daylight duration (maximum at the summer
+solstice). So the maximum difference occurs
+around 19th April, when the daylight variation
+is still approximately equal to its maximum value
+and when the daylight have notably increased since
+the equinox.
+
+\vspace{2mm}
+\riseandset{20110418}{1}{3}{1}{20110419}
+\vspace{2mm}
+
+On this date, at noon, the daylight lasts 50853 seconds
+(that is, 14 h 7 mn 33 s) and it variation is \deltalight{} seconds.
+So, at sunrise, the daylight is shorter by
+\( \frac{228 \times 7}{24} = 66\) seconds and at sunset it is longer
+by 66 seconds likewise. The morning lasts
+\( \frac{50853 - 66}{2} = 25393 \) seconds and the afternoon lasts \( \frac{50853 + 66}{2} = 25459 \) seconds.
+The end result is that solar noon occurs at 11:59:18
+while the middle of daylight occurs at \daynoonhhmmss{}.
+
+Does this logical and computation error invalidate
+the reasoning from the previous section? No, because
+as you can see, the result is an error no longer
+than 33 seconds between solar noon and the
+middle of the daylight. This is still much less
+than the difference between solar noon and mean noon,
+which can nearly reach 17 minutes.
+
+%\vspace{2mm}
+%\riseandset{20120101}{7}{52}{1}{20110419}
+%\vspace{2mm}
+
+In addition, the computation error is nearly zero
+at the winter solstice, since the daylight variation
+itself is nearly zero. Therefore, in the December table, 
+the value printed for the solar noon is pretty much
+the proper one.
+
+\section{Solar Noon Variation}
+
+%\vspace{2mm}
+%\riseandset{20121216}{1}{15}{1}{20121225}
+%\vspace{2mm}
+
+The problem is now to understand why the solar noon
+varies from one day to the next, in some cases with
+a 30-second daily variation.
+
+\subsection{Reference Case}
+
+For the movements of Earth around itself and around
+the sun, let us use the following simplificatons.
+
+\begin{enumerate}
+
+\item The year lasts exacty 360 days, instead of
+365.25 and some.
+
+\item Earth's orbit around the sun is a perfect circle.
+
+\item The ecliptical plane of Earth's orbit is the same as
+the equatorial plane. In other words, the axis of Earth's
+spin is parallel to the axis of Earth revolution around the
+sun.
+
+\item We do not take into account the big scale variation, 
+such as the variation of the angle between the equatorial plane
+and the ecliptical plane, or the precession of equinoxes.
+
+\item We do not take into account the influence of other celestial
+bodies: the Moon, Jupiter, etc. With its mass
+\directlua{affsci(\solarmass)} kg,
+the sun applies a \directlua{force(\solarmass,\solardist)} N
+to the Earth, while the Moon's attraction is 
+only \directlua{force(\lunarmass,\lunardist)} N
+and Jupiter applies a 
+\directlua{force(\jupitermass,\jupiterdist)} N attraction.
+So we can ignore the influence of other celestial bodies
+and pay attention only to the Sun attraction.
+
+\end{enumerate}
+
+The first hypothesis and the last two ones are here only to 
+simplify the computation and they will stay in effect for
+the duration of the whole discussion. The second and third
+hypothesis will be removed in turn to explain why the
+solar noon does not coincidate with the mean noon.
+
+If all five simplifications are in effect, Earth turns around
+the sun in 360 days with a constant speed. So the orbital
+movement is 1 degree per day. If we temporarily use a
+set of coordinates centered on earth and using the
+``fixed stars'', the sun moves one degree by day
+with respect to the ``fixed stars''. To allow for this
+1 degree per day movement and to have the sun at the
+zenith at noon, Earth's rotation around its
+axis is 361 degrees per 24 hours. Therefore,
+on D+90 Earth has rotated for 90 turns and $\frac{1}{4}$,
+on D+180 Earth has rotated for 180 turns and $\frac{1}{2}$
+and on D+270 Earth has rotated for 270 turns and $\frac{3}{4}$.
+See the picture below, which reverts to an heliocentric set of
+coordinates.
+
+\begin{mplibcode}
+beginfig(1);
+ua = 100;
+z0 = (ua,0);
+z90 = (0,ua);
+z180 = (-ua,0);
+z270 = (0,-ua);
+draw z0{up} .. z90 .. z180 .. z270 .. z0;
+
+rayon = 5;
+tiret = 2;
+for i = 0 step 90 until 270 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+  % repère pour le Soleil au méridien
+  draw (x[i], y[i]) + (rayon, 0) rotated (i + 180) --  (x[i], y[i]) + (rayon + tiret, 0) rotated (i + 180);
+endfor;
+
+% soleil
+draw (rayon, 0) .. (0, rayon) .. (-rayon, 0) .. (0, - rayon) .. (rayon, 0);
+
+ecart = rayon + 5;
+drawarrow ( x90 - ecart,  y90) {down} .. {right} ( x90,  y90 - ecart);
+drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+drawarrow (x270 - ecart, y270) .. (x270, y270 - ecart) .. (x270 + ecart, y270) .. (x270, y270 + ecart);
+
+label.rt ("D+0",    (x0 + rayon,           y0));
+label.top("D+90",   (x90,                  y90 + rayon));
+label.lft("D+180",  (x180 - rayon - ecart, y180));
+label.bot("D+270",  (x270,                 y270 - rayon - ecart));
+label.bot("Sun",    (0,                    0 - rayon));
+
+endfig;
+\end{mplibcode}
+
+So, when Earth achieves a circular movement the plane of which
+is the same as the equator's plane, the solar noon and the mean
+noon occurs precisely at the same time.
+
+\subsection{Kepler's Laws}
+
+Kepler's first law tells us that Earth's orbit is an ellipse,
+one focus of which is occupied by the solar system's 
+center of inertia, that is, with a good approximation, the sun.
+
+Kepler's second law tells us that the Earth's speed along
+its sun-focused ellipse is such that the area-speed of the
+sun-Earth vector is a constant.
+
+Kepler's third law does not bring anything interesting in the
+discussion.
+
+Let us see what this would give with an ellipse with
+a high eccentricity (0.5).
+
+\begin{mplibcode}
+beginfig(1);
+ua = 100;
+ub = 50 * sqrt(3);
+z0 = (ua,0);
+z61 = (0,ub);
+z90 = (ua * cosd(116), ub * sind(116));
+z180 = (-ua,0);
+z270 = (x90, - y90);
+z299 = (0,-ub);
+draw z0{up} .. z61 .. z180 .. z299 .. z0;
+
+rayon = 5;
+tiret = 2;
+for i = 0, 61, 90, 180, 270, 299 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+endfor;
+
+% soleil
+xs = ua / 2;
+ys = 0;
+draw (xs + rayon, ys) .. (xs, ys + rayon) .. (xs - rayon, ys) .. (xs, ys - rayon) .. cycle;
+
+label.rt  ("D+0",    (x0 + rayon,   y0));
+label.urt ("D+61",   (x61,          y61 + rayon));
+label.ulft("D+90",   (x90,          y90 + rayon));
+label.lft ("D+180",  (x180 - rayon, y180));
+label.llft("D+270",  (x270,         y270 - rayon));
+label.lrt ("D+299",  (x299,         y299 - rayon));
+label.lrt ("Sun",    (xs,           ys - rayon));
+
+for i = 0 step 90 until 270 :
+  draw (xs, ys) -- (x[i], y[i]);
+endfor
+
+endfig;
+\end{mplibcode}
+
+Since the sun is placed in one of the ellipse's foci, on the right of
+the drawing, we have to shift the D+90 and D+270 points to the
+left, so that the areas (Sun, D+0, D+90), (Sun, D+90, D+180),
+(Sun, D+180, D+270) and (Sun, D+270, D+0) are equivalent.
+So Earth reaches the end of the ellipse's small axis on D+61 instead
+of D+90, and the other end on D+299 instead of D+270.
+
+\begin{mplibcode}
+beginfig(1);
+ua = 100;
+ub = 50 * sqrt(3);
+z0 = (ua,0);
+z61 = (0,ub);
+z90 = (ua * cosd(116), ub * sind(116));
+z180 = (-ua,0);
+z270 = (x90, - y90);
+z299 = (0,-ub);
+draw z0{up} .. z61 .. z180 .. z299 .. z0;
+
+rayon = 5;
+tiret = 2;
+for i = 0, 61, 90, 180, 270, 299 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+  % repère pour le Soleil au méridien
+  draw (x[i], y[i]) + (rayon, 0) rotated (i + 180) --  (x[i], y[i]) + (rayon + tiret, 0) rotated (i + 180);
+endfor;
+
+% soleil
+xs = ua / 2;
+ys = 0;
+draw (xs + rayon, ys) .. (xs, ys + rayon) .. (xs - rayon, ys) .. (xs, ys - rayon) .. cycle;
+
+ecart = rayon + 5;
+drawarrow ( x61 - ecart,  y61) {down} ..  ( (x61, y61) + (ecart, 0) rotated 241);
+drawarrow ( x90 - ecart,  y90) {down} .. {right} ( x90,  y90 - ecart);
+drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+drawarrow (x270 - ecart, y270) .. (x270, y270 - ecart) .. (x270 + ecart, y270) .. (x270, y270 + ecart);
+drawarrow (x299 - ecart, y299) .. (x299, y299 - ecart) .. (x299 + ecart, y299) .. (x299, y299 + ecart) .. ( (x299, y299) + (ecart, 0) rotated 109);
+
+label.rt  ("D+0",    (x0 + rayon,           y0));
+label.urt ("D+61",   (x61,                  y61 + rayon));
+label.ulft("D+90",   (x90,                  y90 + rayon));
+label.lft ("D+180",  (x180 - rayon - ecart, y180));
+label.llft("D+270",  (x270,                 y270 - rayon - ecart));
+label.lrt ("D+299",  (x299,                 y299 - rayon - ecart));
+label.bot ("Sun",    (xs,                   ys - rayon));
+
+endfig;
+\end{mplibcode}
+
+On day D+61 at mean noon, Earth has rotated 61 turns plus 61 degrees, 
+but it does not aim at the sun. It must rotate an additional 59 degrees
+to aim at the sun and reach solar noon. Likewise, on day D+90 at mean
+noon, Earth has rotated 90 turns plus 90 degrees and has to rotate
+an additional 46 degrees to reach solar noon.
+
+On the other side (literally), on day D+270, the solar noon occurs before
+the mean noon: the solar noon occurs after 270 turns plus 224 degrees 
+and the mean noon occurs after 270 turns plus 270 degrees, that is,
+46 degrees after the solar noon.
+
+\begin{mplibcode}
+beginfig(1);
+
+rayon = 20;
+rayonf = 25;
+pair meannoon, solarnoon;
+
+z61 = (0, 0);
+draw (z61 + (rayon, 0)) .. (z61 + (0, rayon)) .. (z61 + (-rayon, 0)) .. (z61 + (0, -rayon)) .. cycle;
+label.top("D+61", z61 + (0, rayon));
+
+meannoon   := z61 + (rayonf, 0) rotated 241;
+solarnoon := z61 + (rayonf, 0) rotated 300;
+draw (z61 + (rayon, 0) rotated 241) -- meannoon;
+draw (z61 + (rayon, 0) rotated 300) -- solarnoon;
+label.llft("Mean noon",  meannoon);
+label.lrt ("Solar noon", solarnoon);
+drawarrow (z61 - (rayonf, 0)) {down} .. meannoon;
+drawarrow meannoon { dir 331 } .. { dir 30} solarnoon;
+
+z90 = (100, 0);
+draw (z90 + (rayon, 0)) .. (z90 + (0, rayon)) .. (z90 + (-rayon, 0)) .. (z90 + (0, -rayon)) .. cycle;
+label.top("D+90", z90 + (0, rayon));
+meannoon   := z90 + (rayonf, 0) rotated 270;
+solarnoon := z90 + (rayonf, 0) rotated 314;
+draw (z90 + (rayon, 0) rotated 314) -- solarnoon;
+draw (z90 + (rayon, 0) rotated 270) -- meannoon;
+label.bot ("Mean noon",  meannoon);
+label.lrt ("Solar noon", solarnoon);
+drawarrow (z90 - (rayonf, 0)) {down} .. meannoon;
+drawarrow meannoon { dir 0 } .. { dir 44 }  solarnoon;
+
+z270 = (200, 0);
+draw (z270 + (rayon, 0)) .. (z270 + (0, rayon)) .. (z270 + (-rayon, 0)) .. (z270 + (0, -rayon)) .. cycle;
+label.top("D+270", z270 + (0, rayonf + 10));
+solarnoon := z270 + (rayonf, 0) rotated 44;
+meannoon   := z270 + (rayonf, 0) rotated 90;
+draw (z270 + (rayon, 0) rotated 44) -- solarnoon;
+draw (z270 + (rayon, 0) rotated 90) -- meannoon;
+label.lft("Mean noon",  meannoon);
+label.rt ("Solar noon", solarnoon);
+drawarrow (z270 - (rayonf, 0)) {down} .. (z270 - (0, rayonf)) .. (z270 + (rayonf, 0)) .. solarnoon;
+drawarrow solarnoon { dir 134 } .. { dir 180}  meannoon;
+
+z299 = (350, 0);
+draw (z299 + (rayon, 0)) .. (z299 + (0, rayon)) .. (z299 + (-rayon, 0)) .. (z299 + (0, -rayon)) .. cycle;
+label.top("D+299", z299 + (0, rayonf + 10));
+
+solarnoon := z299 + (rayonf, 0) rotated 63;
+meannoon   := z299 + (rayonf, 0) rotated 119;
+draw (z299 + (rayon, 0) rotated 63) -- solarnoon;
+draw (z299 + (rayon, 0) rotated 119) -- meannoon;
+label.urt ("Solar noon", solarnoon);
+label.ulft("Mean noon",  meannoon);
+%drawarrow (z299 - (rayonf, 0)) {down} .. (z299 - (0, rayonf)) .. (z299 + (rayonf, 0)) .. solarnoon;
+drawarrow (z299 - (rayonf, 0)) {down} .. (z299 - (0, rayonf)) .. solarnoon;
+drawarrow solarnoon { dir 153 } .. { dir 209 } meannoon;
+
+endfig;
+\end{mplibcode}
+
+In these examples, the 46- and 59-degree angles are equivalent
+to a 3- and 4-hour delay respectively. This is very much greater
+than the delays that happen on the real world Earth. But at the 
+same time, the real world orbit's eccentricity is only 0.02
+while the description above posits a 0.5 eccentricity.
+
+\subsection{Influence of the Orbit Slope}
+
+The second simplification is reinstated, while the third simplification
+is removed. The discussion is a bit harder to follow, because it
+requires to think in 3-D, which is not convenient on
+a 2-D sheet of paper.
+
+Let us start from the five simplifications are in effect. Then,
+we rotate the orbital plane \textit{while keeping
+the equatorial plane parallel to itself}, then we project
+the new orbit orthogonally on the former orbit's plane, 
+\textit{while still keeping the equatorial plane parallel 
+to itself}.
+
+\begin{mplibcode}
+beginfig(1);
+
+ua = 100;
+rayon = 5;
+tiret = 2;
+
+% Terre vue de profil
+def terreprofil(expr z) =
+fill z + (rayon, 0) .. z + (0, rayon) .. z - (rayon, 0) .. z - (0, rayon) .. cycle;
+draw z - (rayon + tiret, 0) -- z + (rayon + tiret, 0);
+enddef;
+
+% transformation vue de profil
+xprof = -200;
+draw (xprof, ua) -- (xprof, -ua);
+draw (xprof, 0) + (0, ua) rotated 60 -- (xprof, 0) + (0, -ua) rotated 60;
+terreprofil( (xprof, ua ) );
+terreprofil( (xprof, 0 ) + (0, ua) rotated 60 );
+terreprofil( (xprof, ua / 2 ) );
+terreprofil( (xprof, - ua ) );
+terreprofil( (xprof, 0 ) - (0, ua) rotated 60 );
+terreprofil( (xprof, - ua / 2 ) );
+
+drawarrow  (xprof - rayon - 3 * tiret, ua) {left} .. {dir 240} ((xprof, 0 ) + (0 + rayon + 3 * tiret, ua + tiret) rotated 60);
+drawarrow  (xprof + rayon + 3 * tiret, 0 ) + (0, ua) rotated 60 --  (xprof - rayon - 3 * tiret, ua / 2);
+drawarrow  (xprof + rayon + 3 * tiret, - ua) {right} .. {dir 60} ((xprof, 0 ) - (0 + rayon + 3 * tiret, ua + tiret) rotated 60);
+drawarrow  (xprof - rayon - 3 * tiret, 0 ) - (0, ua) rotated 60 --  (xprof + rayon + 3 * tiret, - ua / 2);
+
+% transformation vue de face
+z0 = (ua,0);
+z90 = (0,ua);
+z180 = (-ua,0);
+z270 = (0,-ua);
+
+pair zf[];
+path orbite;
+zf90 = (0, ua / 2);
+zf270 = (0, - ua / 2);
+orbite = z0{up} .. z90 .. z180 .. z270 .. z0;
+draw orbite;
+draw orbite yscaled 0.5;
+
+for i = 0 step 90 until 270 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+  % repère pour le Soleil au méridien
+  draw (x[i], y[i]) + (rayon, 0) rotated (i + 180) --  (x[i], y[i]) + (rayon + tiret, 0) rotated (i + 180);
+endfor;
+
+% soleil
+draw (rayon, 0) .. (0, rayon) .. (-rayon, 0) .. (0, - rayon) .. (rayon, 0);
+
+% Nouveau J+90
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf90;
+draw ((0, - rayon) -- (0, - rayon - tiret)) shifted (x90, y90 / 2);
+
+drawarrow (z90 - (0, 2 * rayon)) -- (zf90 + (0, 2 * rayon));
+
+% Nouveau J+270
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf270;
+draw ((0, + rayon) -- (0, + rayon + tiret)) shifted zf270;
+
+drawarrow (z270 + (0, 2 * rayon)) -- (zf270 - (0, 2 * rayon));
+
+ecart := rayon + 5;
+drawarrow ( x90 - ecart,  y90) {down} .. {right} ( x90,  y90 - ecart);
+drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+drawarrow (x270 - ecart, y270) .. (x270, y270 - ecart) .. (x270 + ecart, y270) .. (x270, y270 + ecart);
+
+label.rt ("D+0",    (x0 + rayon,           y0));
+label.top("D+90",   (x90,                  y90 + rayon));
+label.lft("D+180",  (x180 - rayon - ecart, y180));
+label.bot("D+270",  (x270,                 y270 - rayon - ecart));
+label.bot("Sun",    (0,                    0 - rayon));
+
+endfig;
+\end{mplibcode}
+
+The end result is that the orbit's circle is contracted along
+the vertical axis, which gives an ellipse. All the while,
+Earth's rotation around its pole axis stays the same, 
+since the pole-to-pole axis was constantly kept parallel to
+itself.
+
+Since we use an exaggerated slope of 60 degrees, the circle is
+contracted by half. With the real world 23-degree slope,
+the contraction would be only 8\%.
+
+Let us now consider the days D+45, D+135, D+225 and D+315.
+
+\begin{mplibcode}
+beginfig(1);
+
+ua = 100;
+rayon = 5;
+tiret = 2;
+% transformation vue de face
+z0   = ( ua,  0);
+z90  = (  0, ua);
+z180 = (-ua,  0);
+z270 = (  0,-ua);
+
+path orbite;
+orbite = z0{up} .. z90 .. z180 .. z270 .. z0;
+
+z45  = point 0.5 of orbite;
+z135 = point 1.5 of orbite;
+z225 = point 2.5 of orbite;
+z315 = point 3.5 of orbite;
+
+pair zf[];
+zf90 = (0, ua / 2);
+xf90 = 0;
+yf90 = ua / 2;
+zf270 = (0, - ua / 2);
+xf270 = 0;
+yf270 = - ua / 2;
+zf45  = z45  yscaled 0.5;
+zf135 = z135 yscaled 0.5;
+zf225 = z225 yscaled 0.5;
+zf315 = z315 yscaled 0.5;
+
+draw orbite;
+draw orbite yscaled 0.5;
+
+for i = 0 step 45 until 315 :
+  % cercle de la Terre
+  draw (x[i] + rayon, y[i]) .. (x[i], y[i] + rayon) .. (x[i] - rayon, y[i]) .. (x[i], y[i] - rayon) .. cycle;
+  % repère pour le Soleil au méridien
+  draw (x[i], y[i]) + (rayon, 0) rotated (i + 180) --  (x[i], y[i]) + (rayon + tiret, 0) rotated (i + 180);
+endfor;
+
+% soleil
+draw (rayon, 0) .. (0, rayon) .. (-rayon, 0) .. (0, - rayon) .. (rayon, 0);
+
+% Nouveau J+45
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf45;
+draw ((- rayon, 0) -- (- rayon - tiret, 0)) rotated 45 shifted (x45, y45 / 2);
+
+drawarrow (z45 - (0, 2 * rayon)) -- (zf45 + (0, 2 * rayon));
+
+% Nouveau J+90
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf90;
+draw ((0, - rayon) -- (0, - rayon - tiret)) shifted (x90, y90 / 2);
+
+drawarrow (z90 - (0, 2 * rayon)) -- (zf90 + (0, 2 * rayon));
+
+% Nouveau J+135
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf135;
+draw ((- rayon, 0) -- (- rayon - tiret, 0)) rotated 135 shifted (x135, y135 / 2);
+
+drawarrow (z135 - (0, 2 * rayon)) -- (zf135 + (0, 2 * rayon));
+
+% Nouveau J+225
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf225;
+draw ((- rayon, 0) -- (- rayon - tiret, 0)) rotated 225 shifted (x225, y225 / 2);
+
+drawarrow (z225 + (0, 2 * rayon)) -- (zf225 - (0, 2 * rayon));
+
+% Nouveau J+270
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf270;
+draw ((0, + rayon) -- (0, + rayon + tiret)) shifted zf270;
+
+drawarrow (z270 + (0, 2 * rayon)) -- (zf270 - (0, 2 * rayon));
+
+% Nouveau J+315
+draw ((rayon, 0) .. (0, rayon) .. (- rayon, 0) .. (0, - rayon) .. cycle) shifted zf315;
+draw ((- rayon, 0) -- (- rayon - tiret, 0)) rotated 315 shifted (x315, y315 / 2);
+
+drawarrow (z315 + (0, 2 * rayon)) -- (zf315 - (0, 2 * rayon));
+
+ecart := rayon + 5;
+%drawarrow ( x90  - ecart,  y90)  {down} .. {right} ( x90,   y90  - ecart);
+%drawarrow ( xf90 - ecart,  yf90) {down} .. {right} ( xf90,  yf90 - ecart);
+%drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+%drawarrow (x270  - ecart, y270 ) .. (x270 , y270  - ecart) .. (x270  + ecart, y270 ) .. (x270 , y270  + ecart);
+%drawarrow (xf270 - ecart, yf270) .. (xf270, yf270 - ecart) .. (xf270 + ecart, yf270) .. (xf270, yf270 + ecart);
+
+label.rt ("D+0",    (x0 + rayon,           y0));
+label.rt ("D+45",   (x45 + rayon,          y45));
+label.top("D+90",   (x90,                  y90 + rayon));
+label.lft("D+135",  (x135 - rayon - ecart, y135));
+label.lft("D+180",  (x180 - rayon - ecart, y180));
+label.lft("D+225",  (x225 - rayon - ecart, y225));
+label.bot("D+270",  (x270,                 y270 - rayon - ecart));
+label.rt ("D+315",  (x315 + rayon,         y315));
+label.bot("Sun",    (0,                    0 - rayon));
+
+endfig;
+\end{mplibcode}
+
+With this transformation, we notice that mean noon and solar
+noon occurs at the same time for D+0, D+90, D+180 and D+270. But
+this is not the case with the other days, especially 
+D+45, D+135, D+225 and D+315.
+
+
+\begin{mplibcode}
+beginfig(1);
+
+rayon = 20;
+rayonf = 25;
+pair meannoon, solarnoon;
+
+z45 = (0, 0);
+draw (z45 + (rayon, 0)) .. (z45 + (0, rayon)) .. (z45 + (-rayon, 0)) .. (z45 + (0, -rayon)) .. cycle;
+label.top("D+45", z45 + (0, rayon));
+meannoon   := z45 + (rayonf, 0) rotated 225;
+solarnoon := z45 + (rayonf, 0) rotated 207;
+draw (z45 + (rayon, 0) rotated 225) -- meannoon;
+draw (z45 + (rayon, 0) rotated 207) -- solarnoon;
+label.bot ("Mean noon",  meannoon);
+label.lft ("Solar noon", solarnoon);
+drawarrow (z45 - (rayonf, 0)) {down} .. solarnoon;
+drawarrow solarnoon { dir 297 } .. { dir 315} meannoon;
+
+z135 = (70, 0);
+draw (z135 + (rayon, 0)) .. (z135 + (0, rayon)) .. (z135 + (-rayon, 0)) .. (z135 + (0, -rayon)) .. cycle;
+label.top("D+135", z135 + (0, rayon));
+meannoon   := z135 + (rayonf, 0) rotated 315;
+solarnoon := z135 + (rayonf, 0) rotated 333;
+draw (z135 + (rayon, 0) rotated 315) -- meannoon;
+draw (z135 + (rayon, 0) rotated 333) -- solarnoon;
+label.lrt("Mean noon",  meannoon);
+label.rt ("Solar noon", solarnoon);
+drawarrow (z135 - (rayonf, 0)) {down} .. meannoon;
+drawarrow meannoon { dir 45 } .. { dir 63}  solarnoon;
+
+z225 = (180, 0);
+draw (z225 + (rayon, 0)) .. (z225 + (0, rayon)) .. (z225 + (-rayon, 0)) .. (z225 + (0, -rayon)) .. cycle;
+label.top("D+225", z225 + (0, rayon));
+solarnoon := z225 + (rayonf, 0) rotated  27;
+meannoon   := z225 + (rayonf, 0) rotated  45;
+draw (z225 + (rayon, 0) rotated  27) -- solarnoon;
+draw (z225 + (rayon, 0) rotated  45) -- meannoon;
+label.rt  ("Solar noon", solarnoon);
+label.urt ("Mean noon",  meannoon);
+drawarrow (z225 - (rayonf, 0)) {down} .. solarnoon;
+drawarrow solarnoon { dir 217 } .. { dir 135} meannoon;
+
+z315 = (350, 0);
+draw (z315 + (rayon, 0)) .. (z315 + (0, rayon)) .. (z315 + (-rayon, 0)) .. (z315 + (0, -rayon)) .. cycle;
+label.top("D+315", z315 + (0, rayonf));
+meannoon   := z315 + (rayonf, 0) rotated 135;
+solarnoon := z315 + (rayonf, 0) rotated 153;
+draw (z315 + (rayon, 0) rotated 135) -- meannoon;
+draw (z315 + (rayon, 0) rotated 153) -- solarnoon;
+label.ulft("Mean noon",  meannoon);
+label.lft ("Solar noon", solarnoon);
+drawarrow (z315 - (rayonf, 0)) {down} .. (z315 - (0, rayonf)) .. (z315 + (rayonf, 0)) .. meannoon;
+drawarrow meannoon { dir 225 } .. { dir 243}  solarnoon;
+
+endfig;
+\end{mplibcode}
+
+We see that the solar noon occurs before the mean noon from D+0 to D+90
+and then again from D+180 to D+270, while the mean noon occurs before
+the solar noon from D+90 to D+180 and again from D+270 to D+360.
+Instead of a periodical variation with a 1-year period, we have now
+a variation with a 1-half-year period.
+
+\subsection{In Summary}
+
+With the values used in the discussion, 0.5 eccentricity and 
+60-degree slope, merging the two phenomenons is difficult.
+But with the real world values, eccentricity less than 0.02
+and 23-degree slope, we can assimilate the variations to
+sine waves with a rather small amplitude
+and add them. Attention, the D+0 days are not the same for
+both phenomenons. For the eccentricity, D+0 is 3rd of January,
+when Earth is at its perihelion. For the angle between the equatorial
+and orbital plane, D+0 is either equinox, around 21st
+March and 21st September.
+
+The real variation curve is given in
+``Histoire de l'Heure en France'', 
+by Jacques Gapaillard, published by Vuibert -- ADAPT. 
+The equation of time (gap between the solar noon and the
+mean noon) spans from a delay of 14 mn and 15 s of the 
+solar noon with respect to the mean noon, to a 16 mn and
+10 s advance of the solar noon with respect to the mean noon.
+
+\section{Annex}
+
+This text is published with the Creative Commons License
+Attribution - No Commercial Use - Share-Alike 
+3.0 : CC BY-NC-SA.
+The programs embedded in this document are published
+under double license GPL + Artistic.
+Copyright (c) 2012-2013, Jean Forget.
+
+\end{texte}
+\end{document}
