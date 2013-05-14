@@ -1,5 +1,5 @@
 \documentclass[a4paper]{article}
-\usepackage[english,frenchb,german,italian,latin]{babel}
+\usepackage[english,frenchb,italian,latin]{babel}
 \usepackage[utf8]{luainputenc}
 \usepackage{luaotfload}
 %\usepackage{graphicx}
@@ -7,7 +7,8 @@
 %\usepackage[dvips]{hyperref}
 \usepackage{breakurl}
 \usepackage{perltex}
-\usepackage{luamplib}
+%\usepackage{luamplib}
+\usepackage{luatexko-mplib}
 
 % marge haute 25.4 - 12 = 13.4 mm
 \topmargin=-12mm
@@ -186,7 +187,7 @@ EOF
 % et calcul de la force d'attraction entre la Terre et un corps céleste
 \directlua{
 function affsci(n)
-  local expo = math.floor(math.log10(n));
+  local expo = math.floor(math.log(n) / math.log(10));
   local mant = n / 10 ^ expo;
   local facteur = 1000;
   mant = math.floor(mant * facteur) / facteur;
@@ -279,7 +280,8 @@ en été.~»
 
 Cette personne associe la notion d'heure légale à l'expression ``midi moyen''
 et la notion de midi du temps moyen à l'expression ``midi solaire''.
-Si l'on tente de lui expliquer que, dans le cas de Strasbourg pendant l'hiver, l'écart
+Si l'on tente de lui expliquer que, dans le cas de Strasbourg pendant l'hiver
+(donc pendant une période sans changement d'heure), l'écart
 entre le midi solaire et le midi de l'heure légale varie
 de 1 heure et 16 minutes à 1 heure et 46 minutes, alors la personne
 ne comprendra plus.
@@ -385,14 +387,14 @@ tableau du mois de mars :
 Le 20~mars, le jour dure 12~h 9~mn et 32~s, soit 43~772~s.
 Le 21~mars, il dure 12~h 12~mn et 57~s, soit 43~997~s
 et le 22~mars, il dure 12~h 16~mn et 22~s, soit 44~182~s.
-Cela ne veut pas dire que le 20~ mars à 23~h 59, la durée
+Cela ne veut pas dire que le 20~mars à 23~h 59, la durée
 du jour et de 43~772~s et que le 21~mars à 0~h 01, elle est
 brusquement passée à 43~997~s. La durée varie de façon continue
 et puisqu'elle varie de 205~s en 24~h, elle varie de 51~s en 6~h.
 Cela donne :
 
 \vspace{2mm}
-\begin{tabular}{|c|c|c|}
+\begin{tabular}{|l|l|l|}
 \hline
 20~mars, midi & 43~772 & 12~h 9~mn 32~s \\
 \hline
@@ -452,7 +454,6 @@ car la variation de la durée du jour est elle-même nulle.
 Donc, dans le tableau pour la fin décembre et le début 
 de janvier, la valeur indiquée pour le midi solaire
 est quasiment exacte.
-
 
 \section{Variation du midi solaire}
 
@@ -640,9 +641,9 @@ draw (xs + rayon, ys) .. (xs, ys + rayon) .. (xs - rayon, ys) .. (xs, ys - rayon
 ecart = rayon + 5;
 drawarrow ( x61 - ecart,  y61) {down} ..  ( (x61, y61) + (ecart, 0) rotated 241);
 drawarrow ( x90 - ecart,  y90) {down} .. {right} ( x90,  y90 - ecart);
-%drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
+drawarrow (x180 - ecart, y180) .. (x180, y180 - ecart) .. (x180 + ecart, y180);
 drawarrow (x270 - ecart, y270) .. (x270, y270 - ecart) .. (x270 + ecart, y270) .. (x270, y270 + ecart);
-%drawarrow (x299 - ecart, y299) .. (x299, y299 - ecart) .. (x299 + ecart, y299) .. (x299, y299 + ecart) .. ( (x299, y299) + (ecart, 0) rotated 109);
+drawarrow (x299 - ecart, y299) .. (x299, y299 - ecart) .. (x299 + ecart, y299) .. (x299, y299 + ecart) .. ( (x299, y299) + (ecart, 0) rotated 109);
 
 label.rt  ("J+0",    (x0 + rayon,           y0));
 label.urt ("J+61",   (x61,                  y61 + rayon));
@@ -656,7 +657,7 @@ endfig;
 \end{mplibcode}
 
 Le jour J+61 à midi moyen, la Terre a effectué 61~tours plus 61~degrés,
-mais elle ne pointe pas vers le soleil. Il reste encore à effectuer
+mais le repère ne pointe pas vers le soleil. Il reste encore à effectuer
 une rotation de 59~degrés pour pointer vers le soleil et arriver au midi
 solaire. De même, le jour J+90 à midi moyen, la Terre a effectué 90~tours
 plus 90~degrés et il reste à effectuer une rotation de 46~degrés pour
@@ -705,7 +706,7 @@ midisolaire := z270 + (rayonf, 0) rotated 44;
 midimoyen   := z270 + (rayonf, 0) rotated 90;
 draw (z270 + (rayon, 0) rotated 44) -- midisolaire;
 draw (z270 + (rayon, 0) rotated 90) -- midimoyen;
-label.top("Midi moyen",   midimoyen);
+label.lft("Midi moyen",   midimoyen);
 label.rt ("Midi solaire", midisolaire);
 %drawarrow (z270 - (rayonf, 0)) {down} .. midisolaire;
 drawarrow (z270 - (rayonf, 0)) {down} .. (z270 - (0, rayonf)) .. (z270 + (rayonf, 0)) .. midisolaire;
@@ -722,7 +723,8 @@ draw (z299 + (rayon, 0) rotated 119) -- midimoyen;
 label.urt ("Midi solaire", midisolaire);
 label.ulft("Midi moyen",   midimoyen);
 %drawarrow (z299 - (rayonf, 0)) {down} .. (z299 - (0, rayonf)) .. (z99 + (0, rayonf)) .. midisolaire;
-drawarrow (z299 - (rayonf, 0)) {down} .. (z299 - (0, rayonf)) .. midisolaire;
+drawarrow (z299 - (rayonf, 0)) {down} .. (z299 - (0, rayonf)) .. (z299 + (rayonf, 0)) .. midisolaire;
+%drawarrow (z299 - (rayonf, 0)) {down} .. (z299 - (0, rayonf)) .. midisolaire;
 drawarrow midisolaire { dir 153 } .. { dir 209 } midimoyen;
 
 endfig;
