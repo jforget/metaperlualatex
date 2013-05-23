@@ -30,6 +30,9 @@ my @args_l;
 my $dry_run;
 my $job1;    # explicit jobname option
 my $job2;    # implicit from filename.tex parameter
+my $pgm1;    # explicit program option
+my $pgm2;    # default lualatex program
+$pgm2 = $ENV{PERLTEX} // 'lualatex';
 
 while (my $arg = shift @ARGV) {
   given ($arg) {
@@ -67,6 +70,14 @@ EOF
     when (/--permit$/) {
       push @args_p, $arg, shift @ARGV;
     }
+    when (/--latex=(.*)$/) {
+      $pgm1 = $1;
+      push @args_p, $arg;
+    }
+    when (/--latex$/) {
+      $pgm1 = shift @ARGV;
+      push @args_p, "$arg=$pgm1";
+    }
 
     # lualatex options and parameters
     when (/--jobname$/) {
@@ -91,12 +102,15 @@ unless ($job1) {
     unshift @args_l, "--jobname=$job2";
   }
 }
+unless ($pgm1) {
+  push @args_p, "--latex=$pgm2";
+}
 
 if ($dry_run) {
-  say join "\n  ", 'perltex', @args_p, "--latex=lualatex", @args_l;
+  say join "\n  ", 'perltex', @args_p, @args_l;
 }
 else {
-  exec 'perltex', @args_p, "--latex=lualatex", @args_l;
+  exec 'perltex', @args_p, @args_l;
 }
 
 __END__
