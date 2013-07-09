@@ -11,7 +11,8 @@ Perl  et   perltex  sont  relativement  dénués  de   bugs,  donc  leur
 installation ne  doit pas poser  de problèmes. lualatex est  encore en
 cours de  développement béta, donc il  est probable que  vous ayez des
 problèmes. Et si vous avez besoin de DateTime::Event::Sunrise, il faut
-corriger un bug dans ce module.
+faire  attention à  la version,  en raison  d'un bug  qui  a longtemps
+traîné dans ce module.
 
 Perl
 ----
@@ -74,27 +75,9 @@ Babel et lualatex.
 DateTime::Event::Sunrise
 ------------------------
 
-Si  vous voulez  générer soleil.pdf  à partir  de soleil.tex,  il vous
-faudra une  version patchée de  DateTime::Event::Sunrise. Installez la
-version  actuelle (et  buguée) avec  cpan, cpanp  ou cpanm,  selon vos
-préférences,  de sorte  d'avoir tous  les pré-requis  pour  ce module.
-Puis téléchargez l'archive DateTime-Event-Sunrise-0.0501.tar.gz depuis
-votre miroir CPAN favori.
-
-  ftp://votre.miroir.prefere.org/chemin/vers/cpan/authors/id/R/RK/RKHILL/DateTime-Event-Sunrise-0.0501.tar.gz
-
-et téléchargez le patch dt-e-sunrise.patch depuis
-
-  https://rt.cpan.org/Public/Bug/Display.html?id=34770
-
-Enfin :
-
-  tar -zxvf DateTime-Event-Sunrise-0.0501.tar.gz
-  mv DateTime-Event-Sunrise-0.0501 DateTime-Event-Sunrise-0.0502
-  patch -p0 < dt-e-sunrise.patch
-  cd DateTime-Event-Sunrise-0.0502
-  perl Makefile.PL
-  make
-  make test
-  sudo make install
+Faites  attention à  la version.  Il faut  impérativement  une version
+0.0502 ou ultérieure. Jusqu'à la version 0.0501, il y avait un bug qui
+provoquait des  gros problèmes le  jour de l'équinoxe de  printemps et
+des petites erreurs  pendant presque tout le reste  de l'année.  Donc,
+je répête, version 0.0502 ou ultérieure.
 
