@@ -189,6 +189,139 @@ EOF
   return $table
 }
 
+\perlnewcommand{\calculmidi}[1]{
+use DateTime::Event::Sunrise;
+  my ($date) = @_;
+  my ($annee, $mois, $jour)  = unpack("a4 a2 a2", $date);
+  $date = DateTime->new(year => $annee, month => $mois, day => $jour, locale => 'fr');
+  my ($long, $lat) = qw/0.06 47.25/;
+
+  # Fonctions locales, en fait des références sur fonction
+  # Renvoie une durée en secondes, puis en heures, minutes, secondes
+  # avec un objet DateTime::Duration en entrée
+  my $fmt_duree_dd = sub {
+    my ($duree) = @_;
+    return ($duree->hours * 3600 + $duree->minutes * 60 + int($duree->seconds),
+	    sprintf("%2d h %2d mn %d s", $duree->hours, $duree->minutes, int($duree->seconds)));
+  };
+  # Idem, avec un nombre de secondes en entrée
+  my $fmt_duree_num = sub {
+    my ($duree) = @_;
+    my ($h, $m, $s);
+    $s = $duree;
+    $m = int($s / 60);
+    $s -= $m * 60;
+    $h = int($m / 60);
+    $m -= $h * 60;
+    return ($duree,  "$h h $m mn $s s");
+  };
+  my $position = DateTime::Event::Sunrise->new(longitude => $long,
+                                               latitude  => $lat,  iteration => 1);
+  my $veille    = $date->clone->add(days => -1);
+  my $lendemain = $date->clone->add(days => +1);
+  my $jourmidij = $date->strftime("%d %M, midi");
+  my $lever   = $position->sunrise_datetime($date);
+  my $coucher = $position-> sunset_datetime($date);
+  my $jour = $coucher - $lever;
+  my (@lever, @coucher, @milieu); # Objets DateTime pour les 3 levers et les 3 couchers du soleil
+                                  # et les trois milieux de journée
+  my (@lgj_midi_sec, @lgj_midi_hms, @lgj_matn_sec, @lgj_matn_hms, @lgj_soir_sec, @lgj_soir_hms);
+  my (@jour); # Les trois jours sous forme de chaîne de caractères
+  for my $i (0..2) {
+    my $date1 = $date->clone->add(days => $i - 1);
+    $jour   [$i] = $date1->strftime("%d %B");
+    $lever  [$i] = $position->sunrise_datetime($date1);
+    $coucher[$i] = $position-> sunset_datetime($date1);
+    my $duree = $coucher[$i] - $lever[$i];
+    $lgj_midi_sec[$i] = $duree->hours * 3600 + $duree->minutes * 60 + $duree->seconds;
+    $lgj_midi_hms[$i] = sprintf("%2d h %2d mn %d s", $duree->hours, $duree->minutes, $duree->seconds);
+    $milieu [$i] = $lever[$i]->clone->add(seconds => $lgj_midi_sec[$i] / 2);
+  }
+  my $delta_veil = $lgj_midi_sec[1] - $lgj_midi_sec[0]; # Variation de la longueur du jour entre la veille midi et le jour midi
+  my $delta_lend = $lgj_midi_sec[2] - $lgj_midi_sec[1]; # Variation de la longueur du jour entre le jour midi et le lendemain midi
+
+  for my $i (1..2) {
+    my @duree1 = $fmt_duree_dd->($milieu[$i] - $lever[$i]);
+    my @duree2 = $fmt_duree_dd->($milieu[$i] - $milieu[$i - 1]);
+    my $s = $lgj_midi_sec[$i] - int($delta_veil * $duree1[0] / $duree2[0]);
+    ($lgj_matn_sec[$i], $lgj_matn_hms[$i]) = $fmt_duree_num->($s);
+  }
+
+  for my $i (0..1) {
+    my @duree1 = $fmt_duree_dd->($coucher[$i]    - $milieu[$i]);
+    my @duree2 = $fmt_duree_dd->($milieu[$i + 1] - $milieu[$i]);
+    my $s = $lgj_midi_sec[$i] + int($delta_lend * $duree1[0] / $duree2[0]);
+    ($lgj_soir_sec[$i], $lgj_soir_hms[$i]) = $fmt_duree_num->($s);
+  }
+  my $delta_matin = $lgj_midi_sec[1] - $lgj_matn_sec[1]; # Variation de la longueur du jour entre le lever du soleil et le midi de la même date
+  my (undef, $lgmatin) = $fmt_duree_num->($lgj_matn_sec[1] / 2);
+  my (undef, $lgsoir ) = $fmt_duree_num->($lgj_soir_sec[1] / 2);
+  my $midi_solaire = $lever[1]->clone->add(seconds => int($lgj_matn_sec[1] / 2));
+  my $midi_solaire_hms = $midi_solaire->strftime("%H:%M:%S");
+
+  # Maintenant que les calculs sont finis, on met du blanc dans les nombres à 5 chiffres
+  $lgj_matn_sec[0] = 0; # pour éviter un avertissement "uninitialized value"
+  for (@lgj_matn_sec) {
+    s/(\d{3})$/~$1/;
+  }
+  for (@lgj_midi_sec) {
+    s/(\d{3})$/~$1/;
+  }
+  for (@lgj_soir_sec) {
+    s/(\d{3})$/~$1/;
+  }
+  return <<"EOF";
+\\renewcommand{\\matablebis}{
+\\begin{tabular}{|l|r|l|}
+\\hline
+$jour[0], midi & $lgj_midi_sec[0] & $lgj_midi_hms[0] \\\\
+\\hline
+$jour[0], soir & $lgj_soir_sec[0] & $lgj_soir_hms[0] \\\\
+\\hline
+$jour[1], matin & $lgj_matn_sec[1] & $lgj_matn_hms[1] \\\\
+\\hline
+$jour[1], midi & $lgj_midi_sec[1] & $lgj_midi_hms[1] \\\\
+\\hline
+$jour[1], soir & $lgj_soir_sec[1] & $lgj_soir_hms[1] \\\\
+\\hline
+$jour[2], matin & $lgj_matn_sec[2] & $lgj_matn_hms[2] \\\\
+\\hline
+$jour[2], midi & $lgj_midi_sec[2] & $lgj_midi_hms[2] \\\\
+\\hline
+\\end{tabular}
+}
+\\renewcommand{\\deltaveil}{$delta_veil}
+\\renewcommand{\\deltalend}{$delta_lend}
+\\renewcommand{\\deltamatin}{$delta_matin}
+\\renewcommand{\\lgjveilmidihms}{$lgj_midi_hms[0]}
+\\renewcommand{\\lgjjourmidihms}{$lgj_midi_hms[1]}
+\\renewcommand{\\lgjlendmidihms}{$lgj_midi_hms[2]}
+\\renewcommand{\\lgjveilmidisec}{$lgj_midi_sec[0]}
+\\renewcommand{\\lgjjourmidisec}{$lgj_midi_sec[1]}
+\\renewcommand{\\lgjlendmidisec}{$lgj_midi_sec[2]}
+\\renewcommand{\\lgjjourmatnhms}{$lgj_matn_hms[1]}
+\\renewcommand{\\lgmatin}{$lgmatin}
+\\renewcommand{\\lgsoir}{$lgsoir}
+\\renewcommand{\\midisolaire}{$midi_solaire_hms}
+EOF
+}
+
+% Les commandes redéfinies par le calcul de midi
+\newcommand{\matablebis}[0]{à compléter}
+\newcommand{\deltaveil}[0]{100}
+\newcommand{\deltalend}[0]{200}
+\newcommand{\deltamatin}[0]{50}
+\newcommand{\lgjveilmidihms}[0]{12 h 13 mn 14 s}
+\newcommand{\lgjjourmidihms}[0]{12 h 13 mn 14 s}
+\newcommand{\lgjlendmidihms}[0]{12 h 13 mn 14 s}
+\newcommand{\lgjveilmidisec}[0]{12 h 13 mn 14 s}
+\newcommand{\lgjjourmidisec}[0]{12 h 13 mn 14 s}
+\newcommand{\lgjlendmidisec}[0]{12 h 13 mn 14 s}
+\newcommand{\lgjjourmatnhms}[0]{12 h 13 mn 14 s}
+\newcommand{\lgmatin}[0]{6 h 7 mn 8 s}
+\newcommand{\lgsoir}[0]{6 h 7 mn 8 s}
+\newcommand{\midisolaire}[0]{12:00:00}
+
 % Affichage d'un nombre positif au format scientifique avec 3 décimales
 % et calcul de la force d'attraction entre la Terre et un corps céleste
 \directlua{
@@ -396,70 +529,182 @@ tableau du mois de mars :
 \matable
 \vspace{2mm}
 
-Le 20~mars, le jour dure 12~h 9~mn et 32~s, soit 43~772~s.
-Le 21~mars, il dure 12~h 12~mn et 57~s, soit 43~997~s
-et le 22~mars, il dure 12~h 16~mn et 22~s, soit 44~182~s.
-Cela ne veut pas dire que le 20~mars à 23~h 59, la durée
-du jour et de 43~772~s et que le 21~mars à 0~h 01, elle est
-brusquement passée à 43~997~s. La durée varie de façon continue
-et puisqu'elle varie de 205~s en 24~h, elle varie de 51~s en 6~h.
-Cela donne :
+\calculmidi{20110321}
 
-\vspace{2mm}
-\begin{tabular}{|l|l|l|}
-\hline
-20~mars, midi & 43~772 & 12~h 9~mn 32~s \\
-\hline
-20~mars, 18~h & 43~823 & 12~h 10~mn 23~s \\
-\hline
-21~mars, 6~h & 43~946 & 12~h 12~mn 6~s \\
-\hline
-21~mars, midi & 43~997 & 12~h 12~mn 57~s \\
-\hline
-21~mars, 18~h & 44~048 & 12~h 13~mn 48~s \\
-\hline
-22~mars, 6~h & 44~131 & 12~h 15~mn 31~s \\
-\hline
-22~mars, midi & 44~182 & 12~h 16~mn 22~s \\
-\hline
-\end{tabular}
-\vspace{2mm}
+Le 20~mars, le jour dure \lgjveilmidihms, soit \lgjveilmidisec~s.
+Le 21~mars, il dure \lgjjourmidihms, soit \lgjjourmidisec~s
+et le 22~mars, il dure \lgjlendmidihms, soit \lgjlendmidisec~s.
+Cela ne veut pas dire que le 20~mars à 23:59, la durée
+du jour et de \lgjveilmidisec~s et que le 21~mars à 0:01, elle est
+brusquement passée à \lgjjourmidisec~s. La durée varie de façon continue
+et puisqu'elle varie de \deltaveil~s en 24~h, elle varie de \deltamatin~s en 6~h.
+Voici un schéma explicatif. Attention, il n'est pas à l'échelle, les variations
+des heures de lever et de coucher du soleil étant largement surdimensionnées
+par rapport à la durée d'un jour de 24~h.
 
-Donc, le 21~mars, le lever du soleil se produit 6~h 6~mn et 3~s
-avant le midi solaire et le coucher du soleil se produit
-6~h 6~mn 54~s après le midi solaire. On en déduit que le
-midi solaire a lieu à 12~h 7~mn et 10~s et non pas
-à 12~h 7~mn 35~s comme dans le tableau ci-dessus.
+\begin{mplibcode}
+beginfig(1);
+uu = 100;
 
-L'écart entre le midi solaire et le milieu de la journée 
-est proportionnel à la fois à la variation de la durée
-du jour (maximale au moment des équinoxes) et à la durée du 
-jour (maximale au solstice d'été). L'écart maximal se produit
-aux alentours du 22~avril, lorsque la variation de la durée
-du jour est encore voisine de la durée maximale et que la
-durée du jour a eu le temps d'augmenter suffisamment.
+xmin = -1.2 * uu;
+xmax =  2.2 * uu;
+pair znv, zvv, znj, zvj, znl, zvl;
+znv = (    -uu,  0); %  0h veille
+zvv = (      0, uu); % 24h veille
+znj = (      0,  0); %  0h jour principal
+zvj = (     uu, uu); % 24h jour principal
+znl = (     uu,  0);  % 0h lendemain
+zvl = ( 2 * uu, uu); % 24h lendemain
 
-\levercoucher{20110421}{1}{3}{1}{20110422}
-\vspace{2mm}
-\matable
-\vspace{2mm}
+% axe horizontal
+%draw (-1.2 * uu, 0) -- (2.2 * uu, 0);
+drawarrow (xmin, 0) -- (xmax, 0);
+% ligne de l'horloge
+draw znv -- zvv -- znj -- zvj -- znl -- zvl;
+%draw (-uu, 0) -- (0, uu) -- (0, 0) -- (uu, uu) -- (uu, 0) -- (2 * uu, uu);
+label.rt("Ligne d'horloge", zvl);
+label.bot("Veille",    (-0.5 * uu, 0));
+label.bot("Jour",      ( 0.5 * uu, 0));
+label.bot("Lendemain", ( 1.5 * uu, 0));
 
-À cette date à midi, la durée du jour est de 50~397~secondes (soit
-14~heures à trois secondes près) et la variation de cette durée est de
-193~secondes, à peine moins que les 205~secondes de l'équinoxe de
-printemps. Donc, au lever du soleil, la durée est réduite de
-$\frac{193 \times 7}{24} = 56 $ secondes et au coucher du soleil, elle
-est augmentée d'autant. La durée du matin est $ 25~199 - 28 = 25~171 $
-secondes et la durée du soir est $ 25~199 + 28 = 25~227 $ secondes.
-Le midi solaire a donc lieu à 11~h 58~mn 38~s
-alors que le milieu de la journée a lieu à 11~h 59~mn 6~s.
+drawarrow (xmin, 0) -- (xmin, 1.2 * uu);
+label.lft("00:00:00", (xmin,  0));
+label.lft("23:59:59", (xmin, uu));
+
+% lignes des levers et couchers du soleil ainsi que des midis solaires
+pair zleverd, zleverf, zcoucherd, zcoucherf, zmidid, zmidif;
+zleverd = (xmin, .2  * uu);
+zleverf = (xmax, .15 * uu);
+zcoucherd = (xmin, .7  * uu);
+zcoucherf = (xmax, .9  * uu);
+zmidid = 1/2 [zleverd, zcoucherd];
+zmidif = 1/2 [zleverf, zcoucherf];
+draw zleverd   -- zleverf;
+draw zcoucherd -- zcoucherf;
+draw zmidid    -- zmidif;
+label.rt("Lever du soleil",   zleverf);
+label.rt("Coucher du soleil", zcoucherf);
+label.rt("Midi solaire",      zmidif);
+
+% points fournis par DateTime::Event::Sunrise
+pair zleverv, zcoucherv, zleverj, zcoucherj, zleverl, zcoucherl;
+zleverv   = whatever [zleverd,   zleverf  ];   zleverv = whatever [znv, zvv];
+zleverj   = whatever [zleverd,   zleverf  ];   zleverj = whatever [znj, zvj];
+zleverl   = whatever [zleverd,   zleverf  ];   zleverl = whatever [znl, zvl];
+zcoucherv = whatever [zcoucherd, zcoucherf]; zcoucherv = whatever [znv, zvv];
+zcoucherj = whatever [zcoucherd, zcoucherf]; zcoucherj = whatever [znj, zvj];
+zcoucherl = whatever [zcoucherd, zcoucherf]; zcoucherl = whatever [znl, zvl];
+
+dotlabel.lrt("LR", zleverv);
+dotlabel.lrt("LR", zleverj);
+dotlabel.lrt("LR", zleverl);
+dotlabel.lrt("CR", zcoucherv);
+dotlabel.lrt("CR", zcoucherj);
+dotlabel.lrt("CR", zcoucherl);
+
+% coucher virtuel pour un lever et lever virtuel pour un coucher
+pair zccvirtv, zlvvirtv, zccvirtj, zlvvirtj, zccvirtl, zlvvirtl;
+zccvirtv  = whatever [zcoucherd, zcoucherf]; zccvirtv = whatever [ zleverv,   zleverv   + (0, uu) ];
+zccvirtj  = whatever [zcoucherd, zcoucherf]; zccvirtj = whatever [ zleverj,   zleverj   + (0, uu) ];
+zccvirtl  = whatever [zcoucherd, zcoucherf]; zccvirtl = whatever [ zleverl,   zleverl   + (0, uu) ];
+zlvvirtv  = whatever [zleverd,   zleverf  ]; zlvvirtv = whatever [ zcoucherv, zcoucherv + (0, uu) ];
+zlvvirtj  = whatever [zleverd,   zleverf  ]; zlvvirtj = whatever [ zcoucherj, zcoucherj + (0, uu) ];
+zlvvirtl  = whatever [zleverd,   zleverf  ]; zlvvirtl = whatever [ zcoucherl, zcoucherl + (0, uu) ];
+
+draw zleverv   -- zccvirtv; dotlabel.lrt("CV", zccvirtv);
+draw zleverj   -- zccvirtj; dotlabel.lrt("CV", zccvirtj);
+draw zleverl   -- zccvirtl; dotlabel.lrt("CV", zccvirtl);
+draw zcoucherv -- zlvvirtv; dotlabel.lrt("LV", zlvvirtv);
+draw zcoucherj -- zlvvirtj; dotlabel.lrt("LV", zlvvirtj);
+draw zcoucherl -- zlvvirtl; dotlabel.lrt("LV", zlvvirtl);
+
+% midi solaire virtuel
+pair zmdvirtvl, zmdvirtvc, zmdvirtjl, zmdvirtjc, zmdvirtll, zmdvirtlc;
+zmdvirtvl = 1/2 [zleverv,  zccvirtv ]; dotlabel.lrt("MV", zmdvirtvl);
+zmdvirtvc = 1/2 [zlvvirtv, zcoucherv]; dotlabel.lrt("MV", zmdvirtvc);
+zmdvirtjl = 1/2 [zleverj,  zccvirtj ]; dotlabel.lrt("MV", zmdvirtjl);
+zmdvirtjc = 1/2 [zlvvirtj, zcoucherj]; dotlabel.lrt("MV", zmdvirtjc);
+zmdvirtll = 1/2 [zleverl,  zccvirtl ]; dotlabel.lrt("MV", zmdvirtll);
+zmdvirtlc = 1/2 [zlvvirtl, zcoucherl]; dotlabel.lrt("MV", zmdvirtlc);
+
+% midi solaire réel
+pair zmidiv, zmidij, zmidil;
+zmidiv = whatever [zmdvirtvl, zmdvirtvc]; zmidiv = whatever [zleverv, zcoucherv]; dotlabel.lrt("MR", zmidiv);
+zmidij = whatever [zmdvirtjl, zmdvirtjc]; zmidij = whatever [zleverj, zcoucherj]; dotlabel.lrt("MR", zmidij);
+zmidil = whatever [zmdvirtll, zmdvirtlc]; zmidil = whatever [zleverl, zcoucherl]; dotlabel.lrt("MR", zmidil);
+
+% milieu de la journée
+pair zmilieuv, zmilieuj, zmilieul;
+zmilieuv = 1/2 [zleverv, zcoucherv]; dotlabel.ulft("MJ", zmilieuv);
+zmilieuj = 1/2 [zleverj, zcoucherj]; dotlabel.ulft("MJ", zmilieuj);
+zmilieul = 1/2 [zleverl, zcoucherl]; dotlabel.ulft("MJ", zmilieul);
+
+endfig;
+\end{mplibcode}
+
+La ligne en dents de scie est la ligne d'horloge. Elle indique
+l'heure qu'il est en fonction de l'instant donné. Au commencement
+du jour N, cette ligne indique 00:00:00, à la fin du même jour,
+elle indique 23:59:59, puis redescend immédiatement à 00:00:00
+pour le commencement du jour N+1.
+
+Les lignes obliques sont les heures théoriques du lever et du coucher
+du soleil, ainsi que du midi solaire. Lorsqu'une de ces lignes
+croise la ligne d'horloge (dans une partie oblique, pas dans
+une partie verticale), alors il s'agit de l'heure réelle du lever
+du soleil, de son coucher ou du midi solaire.
+Ces points sont marqués par ``LR'' pour les levers et
+``CR'' pour les couchers
+du soleil et par ``MR'' pour les midis solaires.
+La durée théorique de la journée est l'écart vertical
+entre la ligne des levers et la ligne des couchers.
+
+À l'échelle d'une année, ces lignes ne sont pas des droites, mais plus
+ou moins des sinusoïdes ou des sommes de sinusoïdes. À l'échelle d'une
+semaine ou moins, on peut considérer que ce sont des droites.
+
+Comment calculer le véritable moment de midi pour un jour
+donné ? Une façon de faire peut être de décortiquer l'algorithme
+de Paul Schlyter pour en séparer les différents constituants
+comme la longueur du jour et l'équation du temps. Une autre
+façon consiste à se débrouiller avec les points fournis
+par le module \texttt{DateTime::Event::Sunrise}, marqués d'un ``LR'' ou ``CR''
+dans le schéma ci-dessus. C'est la méthode que j'ai adoptée.
+
+La première étape consiste donc à prendre les points calculés
+par le module Perl. La deuxième étape consiste à déterminer
+le coucher virtuel correspondant à un lever du soleil 
+(points marqués ``CV'') et
+le lever virtuel correspondant à un coucher du soleil
+(points marqués ``LV''). Cela se fait par interpolation
+linéaire entre deux couchers réels ou entre deux levers réels.
+La troisième étape consiste à calculer l'heure du midi solaire
+virtuel pour un lever ou un coucher du soleil. Le midi solaire
+est l'instant au milieu du segment entre un lever et son coucher
+virtuel correspondant, ou entre un coucher et son lever virtuel
+correspondant. La connaissance de plusieurs midis virtuels permet
+de déterminer la ligne des midis (quasiment une droite, à l'échelle
+d'une semaine ou moins).
+Et la quatrième étape consiste à calculer le midi
+solaire réel (marqué ``MR''), en déterminant l'intersection de cette ligne des
+midis avec la ligne d'horloge.
+
+Et on peut comparer avec le milieu de la journée, à mi-chemin
+entre le lever réel et le coucher réel de cette journée
+et marqué par ``MJ'' dans le schéma.
+Ces deux instants, midi et milieu, sont très proches, mais
+ils ne coïncident pas exactement. En regardant de près le schéma,
+on voit que les points ne coïncident pas.
+
 
 Cette erreur de calcul invalide-t-elle le raisonnement du
-sous-chapitre précédent ? Non. Comme on peut le voir dans l'exemple
-ci-dessus, cette erreur provoque un écart de 28~secondes au maximum
-entre le midi solaire et le milieu de la journée. Cela reste encore
-largement inférieur aux écarts affichés entre le midi moyen et le midi
-solaire, écarts pouvant dépasser 15~minutes.
+sous-chapitre précédent ? Non. Rappelons que le schéma n'est pas à l'échelle,
+ce qui permet d'avoir une séparation visible entre les deux points
+``MR'' et ``MJ''. Dans la réalité, le calcul montrerait que cette erreur
+provoque un écart d'une demi-minute au maximum entre le midi solaire
+et le milieu de la journée. Cela reste encore largement inférieur aux
+écarts affichés entre le midi moyen et le midi solaire, écarts pouvant
+dépasser 15~minutes.
 
 D'autre part, l'erreur de calcul sur la position du midi
 solaire est quasiment nulle au moment du solstice d'hiver,
