@@ -50,6 +50,7 @@
 
 \NoAutoSpaceBeforeFDP
 
+\newcommand{\matable}{à compléter}
 \newcommand{\veilaubehhmmss}[0]{08:15:00}
 \newcommand{\veilmidihhmmss}[0]{12:00:00}
 \newcommand{\veilsoirhhmmss}[0]{18:15:00}
@@ -165,8 +166,13 @@ TAB
   if ($deltasoir > 0) {
     $sgn_soir = '+';
   }
-  $table .= sprintf(<<"EOF", abs($deltaaube), abs($deltamidi), abs($deltasoir));
+  $table = <<"EOF";
+\\renewcommand{\\matable}{
+$table
 \\hline\n\\end{tabular}
+}
+EOF
+  $table .= sprintf(<<"EOF", abs($deltaaube), abs($deltamidi), abs($deltasoir));
 \\renewcommand{\\veilaubehhmmss}[0]{$veilaubehhmmss}
 \\renewcommand{\\veilmidihhmmss}[0]{$veilmidihhmmss}
 \\renewcommand{\\veilsoirhhmmss}[0]{$veilsoirhhmmss}
@@ -234,8 +240,9 @@ le jour commence à gagner sur la nuit le
 soir, tandis que la nuit continue à gagner sur le jour le matin,
 comme on peut le voir dans le tableau suivant :
 
-\vspace{2mm}
 \levercoucher{20111205}{7}{9}{0}{20111224}
+\vspace{2mm}
+\matable
 \vspace{2mm}
 
 Cela dit, le texte n'est pas un exposé rigoureux de mécanique céleste,
@@ -318,8 +325,9 @@ du soleil, le midi solaire, l'heure du coucher du soleil et les variations
 en secondes de ces trois instants, ainsi que la variation de la longueur
 du jour.
 
-\vspace{2mm}
 \levercoucher{20110316}{1}{15}{1}{20110321}
+\vspace{2mm}
+\matable
 \vspace{2mm}
 
 Prenons le 21 mars. Ce jour-là, la longueur du jour augmente de \deltalumi~s,
@@ -350,8 +358,9 @@ solaire.
 
 Maintenant, prenons le 24 décembre.
 
-\vspace{2mm}
 \levercoucher{20111216}{1}{15}{1}{20111224}
+\vspace{2mm}
+\matable
 \vspace{2mm}
 
 La durée du jour augmente de \deltalumi~secondes, tandis que le midi
@@ -382,8 +391,9 @@ J'ai assimilé le midi solaire au milieu de la journée, c'est-à-dire l'instant
 le lever et le coucher du soleil. C'est approximatif. Reprenons le
 tableau du mois de mars :
 
-\vspace{2mm}
 \levercoucher{20110320}{1}{3}{1}{20110321}
+\vspace{2mm}
+\matable
 \vspace{2mm}
 
 Le 20~mars, le jour dure 12~h 9~mn et 32~s, soit 43~772~s.
@@ -429,8 +439,9 @@ aux alentours du 22~avril, lorsque la variation de la durée
 du jour est encore voisine de la durée maximale et que la
 durée du jour a eu le temps d'augmenter suffisamment.
 
-\vspace{2mm}
 \levercoucher{20110421}{1}{3}{1}{20110422}
+\vspace{2mm}
+\matable
 \vspace{2mm}
 
 À cette date à midi, la durée du jour est de 50~397~secondes (soit
