@@ -93,12 +93,6 @@ use DateTime::Event::Sunrise;
   my $jouraube = 0;
   my $jourmidi = 0;
   my $joursoir = 0;
-  my $veilaubehhmmss = '';
-  my $veilmidihhmmss = '';
-  my $veilsoirhhmmss = '';
-  my $jouraubehhmmss = '';
-  my $jourmidihhmmss = '';
-  my $joursoirhhmmss = '';
   my $deltalumi  = 0;
   my $deltaaube  = 0;
   my $deltamidi  = 0;
@@ -154,23 +148,16 @@ TAB
       $jouraube = $matin->hour * 3600 + $matin->minute * 60 + $matin->second;
       $jourmidi = $midi ->hour * 3600 + $midi ->minute * 60 + $midi ->second;
       $joursoir = $soir ->hour * 3600 + $soir ->minute * 60 + $soir ->second;
-      $jouraubehhmmss = $matin->strftime("%H:%M:%S");
-      $jourmidihhmmss = $midi->strftime("%H:%M:%S");
-      $joursoirhhmmss = $soir->strftime("%H:%M:%S");
       $deltalumi      = $s_matin_av - $s_matin + $s_soir - $s_soir_av;
       $deltaaube      = $s_matin - $s_matin_av;
       $deltamidi      = $s_midi  - $s_midi_av;
       $deltasoir      = $s_soir  - $s_soir_av;
-      #print $jouraubehhmmss, "\n";
       $interet_trouve = 1;
     }
     elsif ($interet_trouve == 0) {
       $veilaube = $matin->hour * 3600 + $matin->minute * 60 + $matin->second;
       $veilmidi = $midi ->hour * 3600 + $midi ->minute * 60 + $midi ->second;
       $veilsoir = $soir ->hour * 3600 + $soir ->minute * 60 + $soir ->second;
-      $veilaubehhmmss = $matin->strftime("%H:%M:%S");
-      $veilmidihhmmss = $midi->strftime("%H:%M:%S");
-      $veilsoirhhmmss  = $soir->strftime("%H:%M:%S");
     }
 
   }
@@ -197,12 +184,6 @@ EOF
 \\renewcommand{\\jouraube}[0]{$jouraube}
 \\renewcommand{\\jourmidi}[0]{$jourmidi}
 \\renewcommand{\\joursoir}[0]{$joursoir}
-\\renewcommand{\\veilaubehhmmss}[0]{$veilaubehhmmss}
-\\renewcommand{\\veilmidihhmmss}[0]{$veilmidihhmmss}
-\\renewcommand{\\veilsoirhhmmss}[0]{$veilsoirhhmmss}
-\\renewcommand{\\jouraubehhmmss}[0]{$jouraubehhmmss}
-\\renewcommand{\\jourmidihhmmss}[0]{$jourmidihhmmss}
-\\renewcommand{\\joursoirhhmmss}[0]{$joursoirhhmmss}
 \\renewcommand{\\deltalumi}[0]{$deltalumi}
 \\renewcommand{\\deltaaube}[0]{%d}
 \\renewcommand{\\deltamidi}[0]{%d}
