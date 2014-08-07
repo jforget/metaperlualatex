@@ -87,17 +87,17 @@ use DateTime::Event::Sunrise;
   my $veille  = $interet->clone->add(days => -1);
   print $veille->strftime("%Y-%m-%d%n");
 
-  my $jouraube = 0;
   my $veilaube = 0;
   my $veilmidi = 0;
-  my $jourmidi = 0;
   my $veilsoir = 0;
+  my $jouraube = 0;
+  my $jourmidi = 0;
   my $joursoir = 0;
-  my $jouraubehhmmss = '';
   my $veilaubehhmmss = '';
   my $veilmidihhmmss = '';
-  my $jourmidihhmmss = '';
   my $veilsoirhhmmss = '';
+  my $jouraubehhmmss = '';
+  my $jourmidihhmmss = '';
   my $joursoirhhmmss = '';
   my $deltalumi  = 0;
   my $deltaaube  = 0;
@@ -165,6 +165,9 @@ TAB
       $interet_trouve = 1;
     }
     elsif ($interet_trouve == 0) {
+      $veilaube = $matin->hour * 3600 + $matin->minute * 60 + $matin->second;
+      $veilmidi = $midi ->hour * 3600 + $midi ->minute * 60 + $midi ->second;
+      $veilsoir = $soir ->hour * 3600 + $soir ->minute * 60 + $soir ->second;
       $veilaubehhmmss = $matin->strftime("%H:%M:%S");
       $veilmidihhmmss = $midi->strftime("%H:%M:%S");
       $veilsoirhhmmss  = $soir->strftime("%H:%M:%S");
@@ -506,7 +509,7 @@ du jour.
 
 Prenons le 21 mars. Ce jour-là, la longueur du jour augmente de \deltalumi~s,
 soit un peu plus de 3~mn. Également, le midi solaire recule de
-\veilmidihhmmss{} à \directlua{sectohms(\jourmidi)}, soit \deltamidi{} secondes.
+\directlua{sectohms(\veilmidi)} à \directlua{sectohms(\jourmidi)}, soit \deltamidi{} secondes.
 L'augmentation de la longueur du jour se répercute pour
 moitié sur la progression du lever du soleil (qui avance puisqu'on est
 au printemps) et sur la progression du coucher du soleil (qui retarde).
@@ -518,12 +521,12 @@ le jour augmente de \deltalumi~s, le lever du soleil progresse de :
 \formuleaube{}
 
 c'est-à-dire qu'il avance de \deltaaube~secondes,
-passant de \veilaubehhmmss{} à \directlua{sectohms(\jouraube)},
+passant de \directlua{sectohms(\veilaube)} à \directlua{sectohms(\jouraube)},
 tandis que le coucher du soleil progresse de :
 
 \formulesoir{}
 
-c'est-à-dire qu'il retarde de \deltasoir~secondes, passant de \veilsoirhhmmss{} à
+c'est-à-dire qu'il retarde de \deltasoir~secondes, passant de \directlua{sectohms(\veilsoir)} à
 \directlua{sectohms(\joursoir)}. Il y a donc une différence, mais qui passe inaperçue, car la
 moitié de la variation du jour dépasse largement la variation du midi
 solaire.
@@ -538,19 +541,19 @@ Maintenant, prenons le 24 décembre.
 \vspace{2mm}
 
 La durée du jour augmente de \deltalumi~secondes, tandis que le midi
-solaire retarde de \deltamidi~secondes, passant de \veilmidihhmmss{} à \directlua{sectohms(\jourmidi)}.
+solaire retarde de \deltamidi~secondes, passant de \directlua{sectohms(\veilmidi)} à \directlua{sectohms(\jourmidi)}.
 Le lever du soleil progresse donc de :
 
 \formuleaube{}
 
 c'est-à-dire qu'il retarde de \deltaaube~secondes, passant
-de \veilaubehhmmss{} à \directlua{sectohms(\jouraube)}, tandis que le
+de \directlua{sectohms(\veilaube)} à \directlua{sectohms(\jouraube)}, tandis que le
 coucher du soleil progresse de :
 
 \formulesoir{}
 
 c'est-à-dire que le coucher du soleil retarde de \deltasoir~secondes,
-passant de \veilsoirhhmmss{} à \directlua{sectohms(\joursoir)}.
+passant de \directlua{sectohms(\veilsoir)} à \directlua{sectohms(\joursoir)}.
 Dans ce cas, la progression du midi solaire est nettement
 prédominante par rapport à la moitié de la variation de la
 durée du jour, donc le lever du soleil et le coucher
