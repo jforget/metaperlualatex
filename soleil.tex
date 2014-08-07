@@ -51,6 +51,12 @@
 \NoAutoSpaceBeforeFDP
 
 \newcommand{\matable}{à compléter}
+\newcommand{\veilaube}[0]{29700}
+\newcommand{\veilmidi}[0]{43200}
+\newcommand{\veilsoir}[0]{65700}
+\newcommand{\jouraube}[0]{29700}
+\newcommand{\jourmidi}[0]{43200}
+\newcommand{\joursoir}[0]{65700}
 \newcommand{\veilaubehhmmss}[0]{08:15:00}
 \newcommand{\veilmidihhmmss}[0]{12:00:00}
 \newcommand{\veilsoirhhmmss}[0]{18:15:00}
@@ -81,6 +87,12 @@ use DateTime::Event::Sunrise;
   my $veille  = $interet->clone->add(days => -1);
   print $veille->strftime("%Y-%m-%d%n");
 
+  my $jouraube = 0;
+  my $veilaube = 0;
+  my $veilmidi = 0;
+  my $jourmidi = 0;
+  my $veilsoir = 0;
+  my $joursoir = 0;
   my $jouraubehhmmss = '';
   my $veilaubehhmmss = '';
   my $veilmidihhmmss = '';
@@ -139,6 +151,9 @@ TAB
     }
 
     if ($day->strftime("%Y%m%d") eq $jour_interet) {
+      $jouraube = $matin->hour * 3600 + $matin->minute * 60 + $matin->second;
+      $jourmidi = $midi ->hour * 3600 + $midi ->minute * 60 + $midi ->second;
+      $joursoir = $soir ->hour * 3600 + $soir ->minute * 60 + $soir ->second;
       $jouraubehhmmss = $matin->strftime("%H:%M:%S");
       $jourmidihhmmss = $midi->strftime("%H:%M:%S");
       $joursoirhhmmss = $soir->strftime("%H:%M:%S");
@@ -173,6 +188,12 @@ $table
 }
 EOF
   $table .= sprintf(<<"EOF", abs($deltaaube), abs($deltamidi), abs($deltasoir));
+\\renewcommand{\\veilaube}[0]{$veilaube}
+\\renewcommand{\\veilmidi}[0]{$veilmidi}
+\\renewcommand{\\veilsoir}[0]{$veilsoir}
+\\renewcommand{\\jouraube}[0]{$jouraube}
+\\renewcommand{\\jourmidi}[0]{$jourmidi}
+\\renewcommand{\\joursoir}[0]{$joursoir}
 \\renewcommand{\\veilaubehhmmss}[0]{$veilaubehhmmss}
 \\renewcommand{\\veilmidihhmmss}[0]{$veilmidihhmmss}
 \\renewcommand{\\veilsoirhhmmss}[0]{$veilsoirhhmmss}
@@ -322,6 +343,26 @@ EOF
 \newcommand{\lgsoir}[0]{6 h 7 mn 8 s}
 \newcommand{\midisolaire}[0]{12:00:00}
 
+% Convertit un nombre de secondes en hh:mm:ss
+\directlua{
+function twodigits(n)
+  if n < 10 then
+    return '0' .. tostring(n)
+  else
+    return tostring(n)
+  end
+end
+function sectohms(n)
+  local floor = math.floor;
+  local mod  = math.fmod;
+  local s = mod(n, 60);
+  local m = mod(floor(n / 60), 60);
+  local h = floor(n / 3600);
+  local ch = twodigits(h) .. ':' .. twodigits(m) .. ':' .. twodigits(s);
+  tex.sprint(ch);
+end
+}
+
 % Affichage d'un nombre positif au format scientifique avec 3 décimales
 % et calcul de la force d'attraction entre la Terre et un corps céleste
 \directlua{
@@ -465,7 +506,7 @@ du jour.
 
 Prenons le 21 mars. Ce jour-là, la longueur du jour augmente de \deltalumi~s,
 soit un peu plus de 3~mn. Également, le midi solaire recule de
-\veilmidihhmmss{} à \jourmidihhmmss{}, soit \deltamidi{} secondes.
+\veilmidihhmmss{} à \directlua{sectohms(\jourmidi)}, soit \deltamidi{} secondes.
 L'augmentation de la longueur du jour se répercute pour
 moitié sur la progression du lever du soleil (qui avance puisqu'on est
 au printemps) et sur la progression du coucher du soleil (qui retarde).
@@ -477,13 +518,13 @@ le jour augmente de \deltalumi~s, le lever du soleil progresse de :
 \formuleaube{}
 
 c'est-à-dire qu'il avance de \deltaaube~secondes,
-passant de \veilaubehhmmss{} à \jouraubehhmmss,
+passant de \veilaubehhmmss{} à \directlua{sectohms(\jouraube)},
 tandis que le coucher du soleil progresse de :
 
 \formulesoir{}
 
 c'est-à-dire qu'il retarde de \deltasoir~secondes, passant de \veilsoirhhmmss{} à
-\joursoirhhmmss. Il y a donc une différence, mais qui passe inaperçue, car la
+\directlua{sectohms(\joursoir)}. Il y a donc une différence, mais qui passe inaperçue, car la
 moitié de la variation du jour dépasse largement la variation du midi
 solaire.
 
@@ -497,19 +538,19 @@ Maintenant, prenons le 24 décembre.
 \vspace{2mm}
 
 La durée du jour augmente de \deltalumi~secondes, tandis que le midi
-solaire retarde de \deltamidi~secondes, passant de \veilmidihhmmss{} à \jourmidihhmmss.
+solaire retarde de \deltamidi~secondes, passant de \veilmidihhmmss{} à \directlua{sectohms(\jourmidi)}.
 Le lever du soleil progresse donc de :
 
 \formuleaube{}
 
 c'est-à-dire qu'il retarde de \deltaaube~secondes, passant
-de \veilaubehhmmss{} à \jouraubehhmmss, tandis que le
+de \veilaubehhmmss{} à \directlua{sectohms(\jouraube)}, tandis que le
 coucher du soleil progresse de :
 
 \formulesoir{}
 
 c'est-à-dire que le coucher du soleil retarde de \deltasoir~secondes,
-passant de \veilsoirhhmmss{} à \joursoirhhmmss{}.
+passant de \veilsoirhhmmss{} à \directlua{sectohms(\joursoir)}.
 Dans ce cas, la progression du midi solaire est nettement
 prédominante par rapport à la moitié de la variation de la
 durée du jour, donc le lever du soleil et le coucher
