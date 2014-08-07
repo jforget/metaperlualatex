@@ -556,21 +556,6 @@ zvj = (     uu, uu); % 24h jour principal
 znl = (     uu,  0);  % 0h lendemain
 zvl = ( 2 * uu, uu); % 24h lendemain
 
-% axe horizontal
-%draw (-1.2 * uu, 0) -- (2.2 * uu, 0);
-drawarrow (xmin, 0) -- (xmax, 0);
-% ligne de l'horloge
-draw znv -- zvv -- znj -- zvj -- znl -- zvl;
-%draw (-uu, 0) -- (0, uu) -- (0, 0) -- (uu, uu) -- (uu, 0) -- (2 * uu, uu);
-label.rt("Ligne d'horloge", zvl);
-label.bot("Veille",    (-0.5 * uu, 0));
-label.bot("Jour",      ( 0.5 * uu, 0));
-label.bot("Lendemain", ( 1.5 * uu, 0));
-
-drawarrow (xmin, 0) -- (xmin, 1.2 * uu);
-label.lft("00:00:00", (xmin,  0));
-label.lft("23:59:59", (xmin, uu));
-
 % lignes des levers et couchers du soleil ainsi que des midis solaires
 pair zleverd, zleverf, zcoucherd, zcoucherf, zmidid, zmidif;
 zleverd = (xmin, .2  * uu);
@@ -579,12 +564,31 @@ zcoucherd = (xmin, .7  * uu);
 zcoucherf = (xmax, .9  * uu);
 zmidid = 1/2 [zleverd, zcoucherd];
 zmidif = 1/2 [zleverf, zcoucherf];
+
+fill ((xmin,  0) -- zleverd   -- zleverf   -- (xmax,  0) -- cycle) withcolor 0.8 white;
+fill ((xmin, uu) -- zcoucherd -- zcoucherf -- (xmax, uu) -- cycle) withcolor 0.8 white;
+
 draw zleverd   -- zleverf;
 draw zcoucherd -- zcoucherf;
 draw zmidid    -- zmidif;
 label.rt("Lever du soleil",   zleverf);
 label.rt("Coucher du soleil", zcoucherf);
 label.rt("Midi solaire",      zmidif);
+
+% axe horizontal
+%draw (-1.2 * uu, 0) -- (2.2 * uu, 0);
+drawarrow (xmin, 0) -- (xmax, 0);
+% ligne de l'horloge
+draw znv -- zvv -- znj -- zvj -- znl -- zvl;
+%draw (-uu, 0) -- (0, uu) -- (0, 0) -- (uu, uu) -- (uu, 0) -- (2 * uu, uu);
+label.urt("Ligne d'horloge", zvl);
+label.bot("Veille",    (-0.5 * uu, 0));
+label.bot("Jour",      ( 0.5 * uu, 0));
+label.bot("Lendemain", ( 1.5 * uu, 0));
+
+drawarrow (xmin, 0) -- (xmin, 1.2 * uu);
+label.lft("00:00:00", (xmin,  0));
+label.lft("23:59:59", (xmin, uu));
 
 % points fournis par DateTime::Event::Sunrise
 pair zleverv, zcoucherv, zleverj, zcoucherj, zleverl, zcoucherl;
@@ -595,12 +599,12 @@ zcoucherv = whatever [zcoucherd, zcoucherf]; zcoucherv = whatever [znv, zvv];
 zcoucherj = whatever [zcoucherd, zcoucherf]; zcoucherj = whatever [znj, zvj];
 zcoucherl = whatever [zcoucherd, zcoucherf]; zcoucherl = whatever [znl, zvl];
 
-dotlabel.lrt("LR", zleverv);
-dotlabel.lrt("LR", zleverj);
-dotlabel.lrt("LR", zleverl);
-dotlabel.lrt("CR", zcoucherv);
-dotlabel.lrt("CR", zcoucherj);
-dotlabel.lrt("CR", zcoucherl);
+dotlabel.lrt ("LR", zleverv);
+dotlabel.lrt ("LR", zleverj);
+dotlabel.lrt ("LR", zleverl);
+dotlabel.ulft("CR", zcoucherv);
+dotlabel.ulft("CR", zcoucherj);
+dotlabel.ulft("CR", zcoucherl);
 
 % coucher virtuel pour un lever et lever virtuel pour un coucher
 pair zccvirtv, zlvvirtv, zccvirtj, zlvvirtj, zccvirtl, zlvvirtl;
@@ -611,12 +615,12 @@ zlvvirtv  = whatever [zleverd,   zleverf  ]; zlvvirtv = whatever [ zcoucherv, zc
 zlvvirtj  = whatever [zleverd,   zleverf  ]; zlvvirtj = whatever [ zcoucherj, zcoucherj + (0, uu) ];
 zlvvirtl  = whatever [zleverd,   zleverf  ]; zlvvirtl = whatever [ zcoucherl, zcoucherl + (0, uu) ];
 
-draw zleverv   -- zccvirtv; dotlabel.lrt("CV", zccvirtv);
-draw zleverj   -- zccvirtj; dotlabel.lrt("CV", zccvirtj);
-draw zleverl   -- zccvirtl; dotlabel.lrt("CV", zccvirtl);
-draw zcoucherv -- zlvvirtv; dotlabel.lrt("LV", zlvvirtv);
-draw zcoucherj -- zlvvirtj; dotlabel.lrt("LV", zlvvirtj);
-draw zcoucherl -- zlvvirtl; dotlabel.lrt("LV", zlvvirtl);
+draw zleverv   -- zccvirtv; dotlabel.top("CV", zccvirtv);
+draw zleverj   -- zccvirtj; dotlabel.top("CV", zccvirtj);
+draw zleverl   -- zccvirtl; dotlabel.top("CV", zccvirtl);
+draw zcoucherv -- zlvvirtv; dotlabel.bot("LV", zlvvirtv);
+draw zcoucherj -- zlvvirtj; dotlabel.bot("LV", zlvvirtj);
+draw zcoucherl -- zlvvirtl; dotlabel.bot("LV", zlvvirtl);
 
 % midi solaire virtuel
 pair zmdvirtvl, zmdvirtvc, zmdvirtjl, zmdvirtjc, zmdvirtll, zmdvirtlc;
