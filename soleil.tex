@@ -264,17 +264,6 @@ use DateTime::Event::Sunrise;
   my $midi_solaire = $lever[1]->clone->add(seconds => int($lgj_matn_sec[1] / 2));
   my $midi_solaire_hms = $midi_solaire->strftime("%H:%M:%S");
 
-  # Maintenant que les calculs sont finis, on met du blanc dans les nombres à 5 chiffres
-  $lgj_matn_sec[0] = 0; # pour éviter un avertissement "uninitialized value"
-  for (@lgj_matn_sec) {
-    s/(\d{3})$/~$1/;
-  }
-  for (@lgj_midi_sec) {
-    s/(\d{3})$/~$1/;
-  }
-  for (@lgj_soir_sec) {
-    s/(\d{3})$/~$1/;
-  }
   return <<"EOF";
 \\renewcommand{\\matablebis}{
 \\begin{tabular}{|l|r|l|}
@@ -298,9 +287,6 @@ $jour[2], midi & $lgj_midi_sec[2] & $lgj_midi_hms[2] \\\\
 \\renewcommand{\\deltaveil}{$delta_veil}
 \\renewcommand{\\deltalend}{$delta_lend}
 \\renewcommand{\\deltamatin}{$delta_matin}
-\\renewcommand{\\lgjveilmidihms}{$lgj_midi_hms[0]}
-\\renewcommand{\\lgjjourmidihms}{$lgj_midi_hms[1]}
-\\renewcommand{\\lgjlendmidihms}{$lgj_midi_hms[2]}
 \\renewcommand{\\lgjveilmidisec}{$lgj_midi_sec[0]}
 \\renewcommand{\\lgjjourmidisec}{$lgj_midi_sec[1]}
 \\renewcommand{\\lgjlendmidisec}{$lgj_midi_sec[2]}
@@ -316,9 +302,6 @@ EOF
 \newcommand{\deltaveil}[0]{100}
 \newcommand{\deltalend}[0]{200}
 \newcommand{\deltamatin}[0]{50}
-\newcommand{\lgjveilmidihms}[0]{12 h 13 mn 14 s}
-\newcommand{\lgjjourmidihms}[0]{12 h 13 mn 14 s}
-\newcommand{\lgjlendmidihms}[0]{12 h 13 mn 14 s}
 \newcommand{\lgjveilmidisec}[0]{12 h 13 mn 14 s}
 \newcommand{\lgjjourmidisec}[0]{12 h 13 mn 14 s}
 \newcommand{\lgjlendmidisec}[0]{12 h 13 mn 14 s}
@@ -327,22 +310,49 @@ EOF
 \newcommand{\lgsoir}[0]{6 h 7 mn 8 s}
 \newcommand{\midisolaire}[0]{12:00:00}
 
-% Convertit un nombre de secondes en hh:mm:ss
+% Formatte un nombre de secondes de diverses manières :
+%    n fmt  zero  résultat
+% 7384  1    ?    7~384
+% 7384  2    0    02:03:04
+% 7384  2    1    2:3:4
+% 7384  3    0    2~h 3~mn 4~s
+% 7384  3    1    02~h 03~mn 04~s
+% 7384  4    0    2~h, 3~mn et 4~s
+% 7384  4    1    02~h, 03~mn et 04~s
 \directlua{
-function twodigits(n)
-  if n < 10 then
+function fmtnb(n, zero)
+  if n < 10 and zero == 0 then
     return '0' .. tostring(n)
   else
     return tostring(n)
   end
 end
-function sectohms(n)
+function fmtsec(n, fmt, zero)
   local floor = math.floor;
-  local mod  = math.fmod;
-  local s = mod(n, 60);
-  local m = mod(floor(n / 60), 60);
-  local h = floor(n / 3600);
-  local ch = twodigits(h) .. ':' .. twodigits(m) .. ':' .. twodigits(s);
+  local mod   = math.fmod;
+  local tilde = string.char(126);
+  local ch, sep1, sep2, sep3;
+  if fmt == 1 then
+    ch = tostring(mod(n, 1000));
+    n = floor(n / 1000);
+    if n > 0 then
+      ch = tostring(n) .. tilde .. ch;
+    end
+  else
+    local s = mod(n, 60);
+    local m = mod(floor(n / 60), 60);
+    local h = floor(n / 3600);
+    if fmt == 2 then
+      sep1, sep2, sep3 = ':', ':', '';
+    elseif fmt == 3 then
+      sep1, sep2, sep3 = tilde .. 'h ', tilde .. 'mn ', tilde .. 's';
+    elseif fmt == 4 then
+      sep1, sep2, sep3 = tilde .. 'h, ', tilde .. 'mn et ', tilde .. 's';
+    else
+      sep1, sep2, sep3 = '?', '?', '?';
+    end
+    ch = fmtnb(h, zero) .. sep1 .. fmtnb(m, zero) .. sep2 .. fmtnb(s, zero) .. sep3;
+  end
   tex.sprint(ch);
 end
 }
@@ -490,7 +500,7 @@ du jour.
 
 Prenons le 21 mars. Ce jour-là, la longueur du jour augmente de \deltalumi~s,
 soit un peu plus de 3~mn. Également, le midi solaire recule de
-\directlua{sectohms(\veilmidi)} à \directlua{sectohms(\jourmidi)}, soit \deltamidi{} secondes.
+\directlua{fmtsec(\veilmidi, 2, 0)} à \directlua{fmtsec(\jourmidi, 2, 0)}, soit \deltamidi{} secondes.
 L'augmentation de la longueur du jour se répercute pour
 moitié sur la progression du lever du soleil (qui avance puisqu'on est
 au printemps) et sur la progression du coucher du soleil (qui retarde).
@@ -502,13 +512,13 @@ le jour augmente de \deltalumi~s, le lever du soleil progresse de :
 \formuleaube{}
 
 c'est-à-dire qu'il avance de \deltaaube~secondes,
-passant de \directlua{sectohms(\veilaube)} à \directlua{sectohms(\jouraube)},
+passant de \directlua{fmtsec(\veilaube, 2, 0)} à \directlua{fmtsec(\jouraube, 2, 0)},
 tandis que le coucher du soleil progresse de :
 
 \formulesoir{}
 
-c'est-à-dire qu'il retarde de \deltasoir~secondes, passant de \directlua{sectohms(\veilsoir)} à
-\directlua{sectohms(\joursoir)}. Il y a donc une différence, mais qui passe inaperçue, car la
+c'est-à-dire qu'il retarde de \deltasoir~secondes, passant de \directlua{fmtsec(\veilsoir, 2, 0)} à
+\directlua{fmtsec(\joursoir, 2, 1)}. Il y a donc une différence, mais qui passe inaperçue, car la
 moitié de la variation du jour dépasse largement la variation du midi
 solaire.
 
@@ -522,19 +532,19 @@ Maintenant, prenons le 24 décembre.
 \vspace{2mm}
 
 La durée du jour augmente de \deltalumi~secondes, tandis que le midi
-solaire retarde de \deltamidi~secondes, passant de \directlua{sectohms(\veilmidi)} à \directlua{sectohms(\jourmidi)}.
+solaire retarde de \deltamidi~secondes, passant de \directlua{fmtsec(\veilmidi, 2, 0)} à \directlua{fmtsec(\jourmidi, 2, 0)}.
 Le lever du soleil progresse donc de :
 
 \formuleaube{}
 
 c'est-à-dire qu'il retarde de \deltaaube~secondes, passant
-de \directlua{sectohms(\veilaube)} à \directlua{sectohms(\jouraube)}, tandis que le
+de \directlua{fmtsec(\veilaube, 2, 0)} à \directlua{fmtsec(\jouraube, 2, 0)}, tandis que le
 coucher du soleil progresse de :
 
 \formulesoir{}
 
 c'est-à-dire que le coucher du soleil retarde de \deltasoir~secondes,
-passant de \directlua{sectohms(\veilsoir)} à \directlua{sectohms(\joursoir)}.
+passant de \directlua{fmtsec(\veilsoir, 2, 0)} à \directlua{fmtsec(\joursoir, 2, 0)}.
 Dans ce cas, la progression du midi solaire est nettement
 prédominante par rapport à la moitié de la variation de la
 durée du jour, donc le lever du soleil et le coucher
@@ -556,12 +566,12 @@ tableau du mois de mars :
 
 \calculmidi{20110321}
 
-Le 20~mars, le jour dure \lgjveilmidihms, soit \lgjveilmidisec~s.
-Le 21~mars, il dure \lgjjourmidihms, soit \lgjjourmidisec~s
-et le 22~mars, il dure \lgjlendmidihms, soit \lgjlendmidisec~s.
+Le 20~mars, le jour dure \directlua{fmtsec(\lgjveilmidisec, 3, 1)}, soit \directlua{fmtsec(\lgjveilmidisec, 1, 0)}~s.
+Le 21~mars, il dure \directlua{fmtsec(\lgjjourmidisec, 3, 1)}, soit \directlua{fmtsec(\lgjjourmidisec, 1, 0)}~s
+et le 22~mars, il dure \directlua{fmtsec(\lgjlendmidisec, 3, 1)}, soit \directlua{fmtsec(\lgjlendmidisec, 1, 0)}~s.
 Cela ne veut pas dire que le 20~mars à 23:59, la durée
-du jour et de \lgjveilmidisec~s et que le 21~mars à 0:01, elle est
-brusquement passée à \lgjjourmidisec~s. La durée varie de façon continue
+du jour est de \directlua{fmtsec(\lgjveilmidisec, 1, 0)}~s et que le 21~mars à 0:01, elle est
+brusquement passée à \directlua{fmtsec(\lgjjourmidisec, 1, 0)}~s. La durée varie de façon continue
 et puisqu'elle varie de \deltaveil~s en 24~h, elle varie de \deltamatin~s en 6~h.
 Voici un schéma explicatif. Attention, il n'est pas à l'échelle, les variations
 des heures de lever et de coucher du soleil étant largement surdimensionnées
